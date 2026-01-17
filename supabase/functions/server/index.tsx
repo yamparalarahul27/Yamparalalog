@@ -364,4 +364,62 @@ app.delete("/make-server-e66bfe94/wiki/:id", async (c) => {
   }
 });
 
+// Get all resources
+app.get("/make-server-e66bfe94/resources", async (c) => {
+  try {
+    const resources = await kv.getByPrefix("resource:");
+    return c.json({ resources: resources || [] });
+  } catch (error) {
+    console.log(`Error fetching resources: ${error}`);
+    return c.json({ error: "Failed to fetch resources", details: String(error) }, 500);
+  }
+});
+
+// Create a new resource
+app.post("/make-server-e66bfe94/resources", async (c) => {
+  try {
+    const resource = await c.req.json();
+    const resourceId = Date.now().toString();
+    const resourceWithId = { ...resource, id: resourceId };
+    
+    await kv.set(`resource:${resourceId}`, resourceWithId);
+    return c.json({ resource: resourceWithId }, 201);
+  } catch (error) {
+    console.log(`Error creating resource: ${error}`);
+    return c.json({ error: "Failed to create resource", details: String(error) }, 500);
+  }
+});
+
+// Update a resource
+app.put("/make-server-e66bfe94/resources/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const updates = await c.req.json();
+    
+    const existing = await kv.get(`resource:${id}`);
+    if (!existing) {
+      return c.json({ error: "Resource not found" }, 404);
+    }
+    
+    const updatedResource = { ...existing, ...updates, id };
+    await kv.set(`resource:${id}`, updatedResource);
+    return c.json({ resource: updatedResource });
+  } catch (error) {
+    console.log(`Error updating resource: ${error}`);
+    return c.json({ error: "Failed to update resource", details: String(error) }, 500);
+  }
+});
+
+// Delete a resource
+app.delete("/make-server-e66bfe94/resources/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    await kv.del(`resource:${id}`);
+    return c.json({ success: true });
+  } catch (error) {
+    console.log(`Error deleting resource: ${error}`);
+    return c.json({ error: "Failed to delete resource", details: String(error) }, 500);
+  }
+});
+
 Deno.serve(app.fetch);

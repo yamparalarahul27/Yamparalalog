@@ -523,7 +523,7 @@ export default function App() {
 
           {/* Resources Tab Content */}
           <TabsContent value="resources" className="mt-6">
-            <Resources currentUser={currentUser} />
+            <Resources currentUser={currentUser} allUsers={users} />
           </TabsContent>
         </Tabs>
       </div>
