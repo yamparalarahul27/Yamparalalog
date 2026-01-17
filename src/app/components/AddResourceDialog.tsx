@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/app/components/ui/dialog";
+} from "@/app/components/ui/dialog"; // Dialog UI components
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -25,16 +25,17 @@ interface Resource {
   description: string;
   category: string;
   addedBy: string;
-  addedDate: string;
+  addedDate: string; // ISO timestamp string
 }
 
 interface AddResourceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (resource: Omit<Resource, "id">) => void;
-  editingResource?: Resource | null;
+  onSave: (resource: Omit<Resource, "id">) => void; // Called from Resources.tsx
+  editingResource?: Resource | null; // For future edit functionality
 }
 
+// Predefined resource categories
 const RESOURCE_CATEGORIES = [
   "Design Tools",
   "Documentation",
@@ -51,11 +52,13 @@ export function AddResourceDialog({
   onSave,
   editingResource,
 }: AddResourceDialogProps) {
+  // Form state
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Design Tools");
 
+  // Reset form when dialog opens/closes or editing resource changes
   useEffect(() => {
     if (editingResource) {
       setTitle(editingResource.title);
@@ -70,6 +73,10 @@ export function AddResourceDialog({
     }
   }, [editingResource, open]);
 
+  /**
+   * Handle form submission
+   * Creates resource object with ISO timestamp and passes to parent
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !url.trim()) return;
@@ -79,8 +86,8 @@ export function AddResourceDialog({
       url: url.trim(),
       description: description.trim(),
       category,
-      addedBy: "",
-      addedDate: new Date().toISOString(),
+      addedBy: "", // Will be set by Resources.tsx with currentUser.name
+      addedDate: new Date().toISOString(), // Full timestamp for "17 Jan 2026, 6:09 PM" format
     });
 
     onOpenChange(false);

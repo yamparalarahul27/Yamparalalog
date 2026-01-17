@@ -210,11 +210,31 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
           </a>
         </div>
         <div className="text-xs text-gray-500 mt-3">
-          Added by {resource.addedBy} on {resource.addedDate}
+          Shared by {resource.addedBy}, {formatDateTime(resource.addedDate)}
         </div>
       </div>
     </div>
   );
+
+  /**
+   * Format date and time for display
+   * Converts ISO timestamp to "17 Jan 2026, 6:09 PM" format
+   */
+  const formatDateTime = (isoString: string): string => {
+    const date = new Date(isoString);
+    
+    const day = date.getDate();
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes.toString().padStart(2, '0');
+    
+    return `${day} ${month} ${year}, ${displayHours}:${displayMinutes} ${ampm}`;
+  };
 
   if (loading) {
     return (
