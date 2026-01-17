@@ -600,7 +600,7 @@ export default function App() {
                       Me
                     </TabsTrigger>
                     {users
-                      .filter((user) => user.id !== currentUser.id)
+                      .filter((user) => user.id !== currentUser.id && user.id !== "newjoin")
                       .map((user) => (
                         <TabsTrigger key={user.id} value={user.id}>
                           {user.name}
