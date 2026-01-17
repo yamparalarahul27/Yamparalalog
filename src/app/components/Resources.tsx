@@ -117,6 +117,7 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
   /**
    * Apply filters to a list of resources
    * Filters by category and user (who added it)
+   * Sorts by date (newest first)
    */
   const filterResources = (resourceList: Resource[]) => {
     let filtered = resourceList;
@@ -130,6 +131,11 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
     if (selectedUser !== "all") {
       filtered = filtered.filter((r) => r.addedById === selectedUser);
     }
+    
+    // Sort by date (newest first)
+    filtered = filtered.sort((a, b) => {
+      return new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime();
+    });
     
     return filtered;
   };
