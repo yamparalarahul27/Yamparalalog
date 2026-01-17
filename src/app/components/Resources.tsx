@@ -1,40 +1,48 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/app/components/ui/button";
-import { AddResourceDialog } from "@/app/components/AddResourceDialog";
-import { FileText, Link as LinkIcon, Plus, Trash2, Filter } from "lucide-react";
-import { User } from "@/app/components/types";
-import { toast } from "sonner";
+import { AddResourceDialog } from "@/app/components/AddResourceDialog"; // Dialog for adding resources
+import { FileText, Link as LinkIcon, Plus, Trash2, Filter } from "lucide-react"; // Icons
+import { User } from "@/app/components/types"; // TypeScript interface for User
+import { toast } from "sonner"; // Toast notifications
 import {
   fetchResources,
   createResource,
   deleteResource,
   Resource,
-} from "@/app/api/resources";
+} from "@/app/api/resources"; // API functions - connects to backend
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/app/components/ui/select";
+} from "@/app/components/ui/select"; // Dropdown select component
 
 interface ResourcesProps {
-  currentUser: User;
-  allUsers: User[];
+  currentUser: User; // Currently logged-in user
+  allUsers: User[]; // All users in system (for filter dropdown)
 }
 
 export function Resources({ currentUser, allUsers }: ResourcesProps) {
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingResource, setEditingResource] = useState<Resource | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedUser, setSelectedUser] = useState("all");
+  // ===== STATE MANAGEMENT =====
+  const [resources, setResources] = useState<Resource[]>([]); // All resources from backend
+  const [dialogOpen, setDialogOpen] = useState(false); // Add resource dialog state
+  const [editingResource, setEditingResource] = useState<Resource | null>(null); // Resource being edited (future feature)
+  const [loading, setLoading] = useState(true); // Loading state
+  const [selectedCategory, setSelectedCategory] = useState("all"); // Category filter
+  const [selectedUser, setSelectedUser] = useState("all"); // User filter
 
+  // ===== EFFECTS =====
+  
+  // Load resources on component mount
   useEffect(() => {
     loadResources();
   }, []);
 
+  /**
+   * Load all resources from backend
+   * Connects to: /src/app/api/resources.ts → backend → KV store (resource:*)
+   */
   const loadResources = async () => {
     try {
       setLoading(true);
@@ -48,13 +56,17 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
     }
   };
 
+  /**
+   * Handle save resource
+   * Creates a new resource with current user info and admin flag
+   */
   const handleSaveResource = async (resourceData: Omit<Resource, "id">) => {
     try {
       const newResource = await createResource({
         ...resourceData,
         addedBy: currentUser.name,
         addedById: currentUser.id,
-        isAdminResource: currentUser.role === "Admin",
+        isAdminResource: currentUser.role === "Admin", // Flag for section separation
       });
       setResources([newResource, ...resources]);
       toast.success("Resource added successfully");
@@ -64,6 +76,10 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
     }
   };
 
+  /**
+   * Handle delete resource
+   * Removes resource from backend and updates local state
+   */
   const handleDeleteResource = async (id: string) => {
     try {
       await deleteResource(id);
@@ -75,28 +91,42 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
     }
   };
 
+  /**
+   * Handle edit resource (future feature)
+   */
   const handleEditResource = (resource: Resource) => {
     setEditingResource(resource);
     setDialogOpen(true);
   };
 
+  /**
+   * Handle open dialog
+   * Opens AddResourceDialog for creating a new resource
+   */
   const handleOpenDialog = () => {
     setEditingResource(null);
     setDialogOpen(true);
   };
 
-  // Filter resources
+  // ===== FILTERING LOGIC =====
+  
+  // Separate resources into Admin and User sections
   const adminResources = resources.filter((r) => r.isAdminResource);
   const userResources = resources.filter((r) => !r.isAdminResource);
 
-  // Apply filters
+  /**
+   * Apply filters to a list of resources
+   * Filters by category and user (who added it)
+   */
   const filterResources = (resourceList: Resource[]) => {
     let filtered = resourceList;
     
+    // Category filter
     if (selectedCategory !== "all") {
       filtered = filtered.filter((r) => r.category === selectedCategory);
     }
     
+    // User filter
     if (selectedUser !== "all") {
       filtered = filtered.filter((r) => r.addedById === selectedUser);
     }
@@ -104,33 +134,45 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
     return filtered;
   };
 
+  // Apply filters to both sections
   const filteredAdminResources = filterResources(adminResources);
   const filteredUserResources = filterResources(userResources);
 
-  // Get unique categories
+  // Get unique categories from all resources
   const categories = Array.from(
     new Set(resources.map((r) => r.category))
   ).sort();
 
+  /**
+   * RESOURCE CARD COMPONENT
+   * Displays individual resource with OG image preview
+   * 
+   * OG IMAGE FETCHING:
+   * - Uses Microlink API to fetch Open Graph meta tags
+   * - URL: https://api.microlink.io/?url={url}
+   * - Returns og:image from website's meta tags
+   * - Fallback to favicon if OG image not found
+   */
   const ResourceCard = ({ resource }: { resource: Resource }) => (
     <div
       key={resource.id}
       className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
     >
-      {/* URL Preview Image */}
+      {/* OG Image Preview - fetches Open Graph image from website */}
       <div className="relative h-40 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center overflow-hidden">
         <img
-          src={`https://api.microlink.io/?url=${encodeURIComponent(resource.url)}&screenshot=true&meta=false&embed=screenshot.url`}
+          src={`https://api.microlink.io/?url=${encodeURIComponent(resource.url)}&embed=image.url`}
           alt={resource.title}
           className="w-full h-full object-cover"
           onError={(e) => {
-            // Fallback to favicon if screenshot fails
+            // Fallback to favicon if OG image fails to load
             const target = e.target as HTMLImageElement;
             try {
               const domain = new URL(resource.url).hostname;
               target.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
               target.className = "w-16 h-16 object-contain";
             } catch {
+              // If all fails, hide the image
               target.style.display = "none";
             }
           }}
