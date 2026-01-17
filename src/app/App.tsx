@@ -97,6 +97,15 @@ export default function App() {
     if (currentUser && !selectedTab) {
       setSelectedTab(currentUser.id);
     }
+    
+    // Set default tab based on user's accessible tabs
+    if (currentUser && currentUser.accessibleTabs) {
+      const tabs = currentUser.accessibleTabs;
+      // Default to first accessible tab
+      if (!tabs.includes(mainTab)) {
+        setMainTab(tabs[0] as "wiki" | "logs" | "resources");
+      }
+    }
   }, [currentUser, users]);
 
   // Filter and sort logs based on selected tab, category, and sort order
@@ -541,7 +550,7 @@ export default function App() {
         </div>
 
         {/* Stats */}
-        <DashboardStats logs={logs} />
+        <DashboardStats logs={logs} currentUser={currentUser} />
 
         {/* Main Tabs: Wiki and Logs */}
         <Tabs
@@ -552,18 +561,24 @@ export default function App() {
           className="mb-6"
         >
           <TabsList>
-            <TabsTrigger value="wiki" className="gap-2">
-              <BookOpen className="h-4 w-4" />
-              WIKI
-            </TabsTrigger>
-            <TabsTrigger value="logs" className="gap-2">
-              <FileText className="h-4 w-4" />
-              LOGS
-            </TabsTrigger>
-            <TabsTrigger value="resources" className="gap-2">
-              <FolderOpen className="h-4 w-4" />
-              RESOURCES
-            </TabsTrigger>
+            {(!currentUser.accessibleTabs || currentUser.accessibleTabs.includes("wiki")) && (
+              <TabsTrigger value="wiki" className="gap-2">
+                <BookOpen className="h-4 w-4" />
+                WIKI
+              </TabsTrigger>
+            )}
+            {(!currentUser.accessibleTabs || currentUser.accessibleTabs.includes("logs")) && (
+              <TabsTrigger value="logs" className="gap-2">
+                <FileText className="h-4 w-4" />
+                LOGS
+              </TabsTrigger>
+            )}
+            {(!currentUser.accessibleTabs || currentUser.accessibleTabs.includes("resources")) && (
+              <TabsTrigger value="resources" className="gap-2">
+                <FolderOpen className="h-4 w-4" />
+                RESOURCES
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Wiki Tab Content */}

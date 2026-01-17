@@ -15,7 +15,9 @@ export interface WikiPage {
   title: string;
   content: string;
   category?: string;
-  images?: string[];
+  tag?: "Design Team" | "Public"; // Visibility tag
+  images?: string[]; // Array of image URLs
+  videos?: string[]; // Array of YouTube video URLs
   comments?: WikiComment[];
   createdBy: string;
   createdByName: string;

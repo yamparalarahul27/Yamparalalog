@@ -3,6 +3,8 @@ export interface User {
   name: string;
   role: string;
   pin?: string;
+  requiresPin?: boolean; // Whether this user needs PIN authentication
+  accessibleTabs?: string[]; // Which tabs this user can access: "wiki", "logs", "resources"
 }
 
 export interface Comment {

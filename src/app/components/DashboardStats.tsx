@@ -1,11 +1,17 @@
-import { DesignLog } from "@/app/components/types";
+import { DesignLog, User } from "@/app/components/types";
 import { FileText, Calendar, Tag } from "lucide-react";
 
 interface DashboardStatsProps {
   logs: DesignLog[];
+  currentUser: User;
 }
 
-export function DashboardStats({ logs }: DashboardStatsProps) {
+export function DashboardStats({ logs, currentUser }: DashboardStatsProps) {
+  // Hide stats for New_Join user (only has Wiki access)
+  if (currentUser.id === "newjoin" || currentUser.accessibleTabs?.length === 1 && currentUser.accessibleTabs[0] === "wiki") {
+    return null;
+  }
+
   // Calculate stats
   const totalLogs = logs.length;
   const categories = new Set(logs.map(log => log.category).filter(Boolean));

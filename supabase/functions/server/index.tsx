@@ -22,27 +22,62 @@ if (!bucketExists) {
 
 // Initialize default users
 const initializeUsers = async () => {
-  const existingUsers = await kv.getByPrefix("user:");
-  if (existingUsers.length === 0) {
-    // Create default users
-    await kv.set("user:admin", {
+  // Define default users
+  const defaultUsers = [
+    {
       id: "admin",
       name: "Admin",
       role: "Admin",
-      pin: "2703"
-    });
-    await kv.set("user:praveen", {
+      pin: "2703",
+      requiresPin: true,
+      accessibleTabs: ["wiki", "logs", "resources"]
+    },
+    {
       id: "praveen",
       name: "Praveen",
       role: "UI Designer",
-      pin: ""
-    });
-    await kv.set("user:shaina", {
+      pin: "",
+      requiresPin: true,
+      accessibleTabs: ["wiki", "logs", "resources"]
+    },
+    {
       id: "shaina",
       name: "Shaina Mishra",
       role: "Graphic Designer",
-      pin: ""
-    });
+      pin: "",
+      requiresPin: true,
+      accessibleTabs: ["wiki", "logs", "resources"]
+    },
+    {
+      id: "newjoin",
+      name: "New_Join",
+      role: "Guest",
+      pin: "",
+      requiresPin: false,
+      accessibleTabs: ["wiki"]
+    }
+  ];
+
+  // Check and add each user individually (preserves existing users)
+  for (const user of defaultUsers) {
+    const existingUser = await kv.get(`user:${user.id}`);
+    if (!existingUser) {
+      console.log(`Creating default user: ${user.name} (${user.id})`);
+      await kv.set(`user:${user.id}`, user);
+    } else {
+      console.log(`User already exists: ${user.name} (${user.id})`);
+      
+      // Migrate existing users to add new fields if they don't have them
+      if (existingUser.requiresPin === undefined || !existingUser.accessibleTabs) {
+        console.log(`Migrating user to new schema: ${user.name} (${user.id})`);
+        const migratedUser = {
+          ...existingUser,
+          requiresPin: user.requiresPin,
+          accessibleTabs: user.accessibleTabs
+        };
+        await kv.set(`user:${user.id}`, migratedUser);
+      }
+    }
   }
 };
 

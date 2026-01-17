@@ -3,7 +3,7 @@ import { Button } from "@/app/components/ui/button";
 import { Card } from "@/app/components/ui/card";
 import { Input } from "@/app/components/ui/input";
 import { Textarea } from "@/app/components/ui/textarea";
-import { BookOpen, Plus, Edit2, Trash2, Search, Upload, X, Image as ImageIcon, MessageSquare, Send } from "lucide-react";
+import { BookOpen, Plus, Edit2, Trash2, Search, Upload, X, Image as ImageIcon, MessageSquare, Send, Video, Tag } from "lucide-react"; // Added Tag icon
 import { toast } from "sonner";
 import {
   fetchWikiPages,
@@ -14,6 +14,13 @@ import {
   WikiComment,
 } from "@/app/api/wiki";
 import { User } from "@/app/components/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/app/components/ui/select"; // Added Select component for tag dropdown
 
 interface WikiProps {
   currentUser: User;
@@ -27,7 +34,11 @@ export function Wiki({ currentUser }: WikiProps) {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [editCategory, setEditCategory] = useState("");
+  const [editTag, setEditTag] = useState<"Design Team" | "Public">("Public"); // Tag state
+  const [tagFilter, setTagFilter] = useState<"all" | "Design Team" | "Public">("all"); // Tag filter
   const [editImages, setEditImages] = useState<string[]>([]);
+  const [editVideos, setEditVideos] = useState<string[]>([]); // YouTube video URLs
+  const [videoUrl, setVideoUrl] = useState(""); // Temporary input for adding videos
   const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [commentText, setCommentText] = useState("");
@@ -58,6 +69,7 @@ export function Wiki({ currentUser }: WikiProps) {
         content: "Start writing your wiki content here...",
         category: "",
         images: [],
+        videos: [],
         comments: [],
         createdBy: currentUser.id,
         createdByName: currentUser.name,
@@ -68,7 +80,9 @@ export function Wiki({ currentUser }: WikiProps) {
       setEditTitle(newPage.title);
       setEditContent(newPage.content);
       setEditCategory(newPage.category || "");
+      setEditTag(newPage.tag || "Public"); // Set tag
       setEditImages(newPage.images || []);
+      setEditVideos(newPage.videos || []);
       setIsEditing(true);
       toast.success("New page created");
     } catch (error) {
@@ -85,7 +99,9 @@ export function Wiki({ currentUser }: WikiProps) {
         title: editTitle,
         content: editContent,
         category: editCategory,
+        tag: editTag, // Update tag
         images: editImages,
+        videos: editVideos,
         lastModified: new Date().toISOString(),
       });
 
@@ -118,14 +134,18 @@ export function Wiki({ currentUser }: WikiProps) {
     setEditTitle(page.title);
     setEditContent(page.content);
     setEditCategory(page.category || "");
+    setEditTag(page.tag || "Public"); // Set tag
     setEditImages(page.images || []);
+    setEditVideos(page.videos || []);
     setIsEditing(true);
   };
 
-  const filteredPages = pages.filter(page =>
-    page.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    page.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPages = pages
+    .filter(page =>
+      (page.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       page.content.toLowerCase().includes(searchQuery.toLowerCase())) &&
+      (tagFilter === "all" || page.tag === tagFilter)
+    );
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -140,6 +160,40 @@ export function Wiki({ currentUser }: WikiProps) {
 
   const handleRemoveImage = (index: number) => {
     setEditImages(editImages.filter((_, i) => i !== index));
+  };
+
+  const handleAddVideo = () => {
+    if (videoUrl.trim()) {
+      setEditVideos([...editVideos, videoUrl]);
+      setVideoUrl("");
+    }
+  };
+
+  const handleRemoveVideo = (index: number) => {
+    setEditVideos(editVideos.filter((_, i) => i !== index));
+  };
+
+  /**
+   * Extract YouTube video ID from various URL formats
+   * Supports:
+   * - https://www.youtube.com/watch?v=VIDEO_ID
+   * - https://youtu.be/VIDEO_ID
+   * - https://www.youtube.com/embed/VIDEO_ID
+   */
+  const extractYouTubeId = (url: string): string | null => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+      /^([a-zA-Z0-9_-]{11})$/, // Direct video ID
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    
+    return null;
   };
 
   const handleAddComment = async () => {
@@ -193,6 +247,21 @@ export function Wiki({ currentUser }: WikiProps) {
               className="pl-9"
             />
           </div>
+          
+          {/* Tag Filter */}
+          <div className="mt-3">
+            <label className="text-xs font-medium mb-1 block text-gray-600">Filter by Tag</label>
+            <Select value={tagFilter} onValueChange={(value) => setTagFilter(value as "all" | "Design Team" | "Public")}>
+              <SelectTrigger className="text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Pages</SelectItem>
+                <SelectItem value="Public">Public</SelectItem>
+                <SelectItem value="Design Team">Design Team</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -212,7 +281,20 @@ export function Wiki({ currentUser }: WikiProps) {
                   setIsEditing(false);
                 }}
               >
-                <h3 className="font-medium text-sm line-clamp-1">{page.title}</h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-medium text-sm line-clamp-1 flex-1">{page.title}</h3>
+                  {page.tag && (
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${
+                        page.tag === 'Design Team'
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'bg-green-100 text-green-700'
+                      }`}
+                    >
+                      {page.tag}
+                    </span>
+                  )}
+                </div>
                 {page.category && (
                   <p className="text-xs text-gray-500 mt-1">{page.category}</p>
                 )}
@@ -256,6 +338,18 @@ export function Wiki({ currentUser }: WikiProps) {
                 onChange={(e) => setEditCategory(e.target.value)}
                 placeholder="e.g., Design System, Guidelines, etc."
               />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Tag</label>
+              <Select value={editTag} onValueChange={(value) => setEditTag(value as "Design Team" | "Public")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a tag" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Public">Public</SelectItem>
+                  <SelectItem value="Design Team">Design Team</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Content</label>
@@ -313,6 +407,63 @@ export function Wiki({ currentUser }: WikiProps) {
               </div>
             </div>
 
+            {/* Videos Section */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">YouTube Videos</label>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <Input
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="Enter YouTube URL"
+                    className="flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleAddVideo}
+                    className="gap-2"
+                  >
+                    <Video className="h-4 w-4" />
+                    Add Video
+                  </Button>
+                </div>
+                {editVideos.length > 0 && (
+                  <div className="grid grid-cols-4 gap-3">
+                    {editVideos.map((video, index) => {
+                      const videoId = extractYouTubeId(video);
+                      return (
+                        <div key={index} className="relative group">
+                          {videoId ? (
+                            <iframe
+                              src={`https://www.youtube.com/embed/${videoId}`}
+                              title={`YouTube video ${index + 1}`}
+                              className="w-full h-24 rounded-lg border border-gray-200"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <div className="w-full h-24 rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center text-xs text-gray-500">
+                              Invalid URL
+                            </div>
+                          )}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleRemoveVideo(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="flex gap-2">
               <Button onClick={handleSavePage}>Save Changes</Button>
               <Button
@@ -322,7 +473,9 @@ export function Wiki({ currentUser }: WikiProps) {
                   setEditTitle(selectedPage.title);
                   setEditContent(selectedPage.content);
                   setEditCategory(selectedPage.category || "");
+                  setEditTag(selectedPage.tag || "Public"); // Set tag
                   setEditImages(selectedPage.images || []);
+                  setEditVideos(selectedPage.videos || []);
                 }}
               >
                 Cancel
@@ -332,8 +485,22 @@ export function Wiki({ currentUser }: WikiProps) {
         ) : (
           <div>
             <div className="flex items-start justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold mb-2">{selectedPage.title}</h1>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold">{selectedPage.title}</h1>
+                  {selectedPage.tag && (
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full flex items-center gap-1.5 ${
+                        selectedPage.tag === 'Design Team'
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'bg-green-100 text-green-700'
+                      }`}
+                    >
+                      <Tag className="h-3 w-3" />
+                      {selectedPage.tag}
+                    </span>
+                  )}
+                </div>
                 {selectedPage.category && (
                   <p className="text-sm text-gray-600 mb-1">
                     Category: {selectedPage.category}
@@ -389,6 +556,36 @@ export function Wiki({ currentUser }: WikiProps) {
                       />
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+            {selectedPage.videos && selectedPage.videos.length > 0 && (
+              <div className="mt-6 border-t pt-6">
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <Video className="h-5 w-5" />
+                  Videos ({selectedPage.videos.length})
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedPage.videos.map((video, index) => {
+                    const videoId = extractYouTubeId(video);
+                    return (
+                      <div key={index} className="relative group aspect-video">
+                        {videoId ? (
+                          <iframe
+                            src={`https://www.youtube.com/embed/${videoId}`}
+                            title={`YouTube video ${index + 1}`}
+                            className="w-full h-full rounded-lg border border-gray-200 hover:border-blue-500 transition-colors"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        ) : (
+                          <div className="w-full h-full rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center text-sm text-gray-500">
+                            Invalid YouTube URL
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

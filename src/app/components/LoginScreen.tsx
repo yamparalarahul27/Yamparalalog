@@ -34,6 +34,13 @@ export function LoginScreen({ users, onLogin, loading = false }: LoginScreenProp
     // Simulate a brief delay for better UX
     await new Promise(resolve => setTimeout(resolve, 800));
 
+    // Check if user doesn't require PIN authentication (e.g., New_Join)
+    if (selectedUser.requiresPin === false) {
+      onLogin(selectedUser);
+      return;
+    }
+
+    // Standard PIN authentication flow
     if (selectedUser.pin && selectedUser.pin === pin) {
       onLogin(selectedUser);
     } else if (!selectedUser.pin) {
@@ -90,7 +97,7 @@ export function LoginScreen({ users, onLogin, loading = false }: LoginScreenProp
             </div>
           </div>
 
-          {selectedUser && !loading && (
+          {selectedUser && !loading && selectedUser.requiresPin !== false && (
             <div className="space-y-2">
               <Label htmlFor="pin">
                 {selectedUser.pin ? "Enter PIN" : "Set Your PIN"}
@@ -118,6 +125,12 @@ export function LoginScreen({ users, onLogin, loading = false }: LoginScreenProp
             </div>
           )}
 
+          {selectedUser && !loading && selectedUser.requiresPin === false && (
+            <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm text-center">
+              No PIN required for New Joiners, Click Login to continue.
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
               {error}
@@ -127,7 +140,7 @@ export function LoginScreen({ users, onLogin, loading = false }: LoginScreenProp
           <Button
             type="submit"
             className="w-full"
-            disabled={!selectedUser || !pin || loading || isLoggingIn}
+            disabled={!selectedUser || (selectedUser.requiresPin !== false && !pin) || loading || isLoggingIn}
           >
             {isLoggingIn ? <Spinner className="h-4 w-4 mr-2" /> : <LogIn className="h-4 w-4 mr-2" />}
             {isLoggingIn ? "Logging in..." : "Log In"}
