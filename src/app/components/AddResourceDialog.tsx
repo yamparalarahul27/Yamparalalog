@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/app/components/ui/dialog";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -92,6 +93,11 @@ export function AddResourceDialog({
           <DialogTitle>
             {editingResource ? "Edit Resource" : "Add New Resource"}
           </DialogTitle>
+          <DialogDescription>
+            {editingResource
+              ? "Make changes to your resource here."
+              : "Add a new resource to your collection."}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

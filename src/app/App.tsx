@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
-import { toast, Toaster } from "sonner";
-import { LoginScreen } from "@/app/components/LoginScreen";
-import { AddLogDialog } from "@/app/components/AddLogDialog";
-import { ViewLogDialog } from "@/app/components/ViewLogDialog";
-import { DesignLogCard } from "@/app/components/DesignLogCard";
-import { DashboardStats } from "@/app/components/DashboardStats";
-import { TimelineView } from "@/app/components/TimelineView";
-import { Wiki } from "@/app/components/Wiki";
-import { Resources } from "@/app/components/Resources";
-import { Button } from "@/app/components/ui/button";
-import { UserSettings } from "@/app/components/UserSettings";
-import { AdminPanel } from "@/app/components/AdminPanel";
-import { FilterBar } from "@/app/components/FilterBar";
-import { TrashDialog } from "@/app/components/TrashDialog";
-import { DesignLog, User } from "@/app/components/types";
+import { toast, Toaster } from "sonner"; // Toast notifications
+import { LoginScreen } from "@/app/components/LoginScreen"; // PIN authentication UI
+import { AddLogDialog } from "@/app/components/AddLogDialog"; // Dialog for adding/editing logs
+import { ViewLogDialog } from "@/app/components/ViewLogDialog"; // Dialog for viewing log details
+import { DesignLogCard } from "@/app/components/DesignLogCard"; // Card view for individual logs
+import { DashboardStats } from "@/app/components/DashboardStats"; // Statistics dashboard
+import { TimelineView } from "@/app/components/TimelineView"; // Timeline view for logs
+import { Wiki } from "@/app/components/Wiki"; // Wiki tab component
+import { Resources } from "@/app/components/Resources"; // Resources tab component
+import { Button } from "@/app/components/ui/button"; // UI component
+import { UserSettings } from "@/app/components/UserSettings"; // User PIN management dialog
+import { AdminPanel } from "@/app/components/AdminPanel"; // Admin user management dialog
+import { FilterBar } from "@/app/components/FilterBar"; // Filtering and view mode controls
+import { TrashDialog } from "@/app/components/TrashDialog"; // Deleted logs (trash bin) dialog
+import { DesignLog, User } from "@/app/components/types"; // TypeScript interfaces
 import {
   Plus,
   LogOut,
@@ -23,13 +23,13 @@ import {
   Trash2,
   BookOpen,
   FolderOpen,
-} from "lucide-react";
+} from "lucide-react"; // Icons
 import {
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
-} from "@/app/components/ui/tabs";
+} from "@/app/components/ui/tabs"; // Tab navigation component
 import {
   fetchLogs,
   createLog,
@@ -39,60 +39,70 @@ import {
   addComment,
   restoreLog,
   permanentDeleteLog,
-} from "@/app/api/logs";
+} from "@/app/api/logs"; // API functions for logs - connects to backend
 import {
   fetchUsers,
   updateUserPin,
   createUser,
   deleteUser,
-} from "@/app/api/users";
+} from "@/app/api/users"; // API functions for users - connects to backend
 
 export default function App() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(
-    null,
-  );
-  const [allLogs, setAllLogs] = useState<DesignLog[]>([]);
-  const [logs, setLogs] = useState<DesignLog[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingLog, setEditingLog] =
-    useState<DesignLog | null>(null);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [viewingLog, setViewingLog] = useState<DesignLog | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [usersLoading, setUsersLoading] = useState(true);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [adminPanelOpen, setAdminPanelOpen] = useState(false);
-  const [selectedTab, setSelectedTab] = useState("");
-  const [selectedCategory, setSelectedCategory] =
-    useState("all");
-  const [sortBy, setSortBy] = useState("newest");
-  const [trashOpen, setTrashOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"card" | "timeline">(
-    "card",
-  );
-  const [mainTab, setMainTab] = useState<"wiki" | "logs" | "resources">("logs");
+  // ===== STATE MANAGEMENT =====
+  // User-related state
+  const [users, setUsers] = useState<User[]>([]); // All users in system
+  const [currentUser, setCurrentUser] = useState<User | null>(null); // Currently logged in user
+  
+  // Log-related state
+  const [allLogs, setAllLogs] = useState<DesignLog[]>([]); // All logs from backend (filtered by role)
+  const [logs, setLogs] = useState<DesignLog[]>([]); // Filtered/sorted logs for display
+  
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false); // Add/Edit log dialog
+  const [editingLog, setEditingLog] = useState<DesignLog | null>(null); // Log being edited
+  const [viewDialogOpen, setViewDialogOpen] = useState(false); // View log details dialog
+  const [viewingLog, setViewingLog] = useState<DesignLog | null>(null); // Log being viewed
+  const [settingsOpen, setSettingsOpen] = useState(false); // User settings dialog
+  const [adminPanelOpen, setAdminPanelOpen] = useState(false); // Admin panel dialog
+  const [trashOpen, setTrashOpen] = useState(false); // Trash bin dialog
+  
+  // Loading state
+  const [loading, setLoading] = useState(true); // Logs loading state
+  const [usersLoading, setUsersLoading] = useState(true); // Users loading state
+  
+  // Navigation and filtering
+  const [selectedTab, setSelectedTab] = useState(""); // Selected user tab (Admin only)
+  const [selectedCategory, setSelectedCategory] = useState("all"); // Category filter
+  const [sortBy, setSortBy] = useState("newest"); // Sort order (newest/oldest)
+  const [viewMode, setViewMode] = useState<"card" | "timeline">("card"); // View mode
+  const [mainTab, setMainTab] = useState<"wiki" | "logs" | "resources">("logs"); // Top-level tab
 
+  // ===== EFFECTS =====
+  
+  // Load users on app mount
   useEffect(() => {
     loadUsers();
   }, []);
 
+  // Load logs when user logs in
   useEffect(() => {
     if (currentUser) {
       loadLogs();
     }
   }, [currentUser]);
 
+  // Initialize selected tab when user logs in
   useEffect(() => {
-    // Initialize selected tab when user logs in or users change
+    // Admin starts on their own tab, users don't have tabs
     if (currentUser && !selectedTab) {
       setSelectedTab(currentUser.id);
     }
   }, [currentUser, users]);
 
+  // Filter and sort logs based on selected tab, category, and sort order
   useEffect(() => {
-    // Filter logs based on selected tab, category, and sort
     if (selectedTab) {
+      // Filter by selected user tab
       let filtered = allLogs.filter(
         (log) => log.userId === selectedTab && !log.deleted,
       );
@@ -117,6 +127,12 @@ export default function App() {
     }
   }, [selectedTab, allLogs, selectedCategory, sortBy]);
 
+  // ===== DATA LOADING FUNCTIONS =====
+  
+  /**
+   * Load all users from backend
+   * Connects to: /src/app/api/users.ts → /supabase/functions/server/index.tsx → KV store (user:*)
+   */
   const loadUsers = async () => {
     try {
       const fetchedUsers = await fetchUsers();
@@ -129,6 +145,14 @@ export default function App() {
     }
   };
 
+  /**
+   * Load design logs from backend
+   * Connects to: /src/app/api/logs.ts → /supabase/functions/server/index.tsx → KV store (log:*)
+   * 
+   * ROLE-BASED FILTERING:
+   * - Admin: Sees ALL logs from all users
+   * - Regular users: See only their own logs
+   */
   const loadLogs = async () => {
     try {
       setLoading(true);
@@ -137,12 +161,13 @@ export default function App() {
       // Filter logs based on user role
       let filteredLogs = fetchedLogs;
       if (currentUser?.role !== "Admin") {
+        // Regular users only see their own logs
         filteredLogs = fetchedLogs.filter(
           (log) => log.userId === currentUser?.id,
         );
       }
 
-      // Sort by date descending
+      // Sort by date descending (newest first)
       const sortedLogs = filteredLogs.sort(
         (a, b) =>
           new Date(b.date).getTime() -
@@ -158,6 +183,13 @@ export default function App() {
     }
   };
 
+  // ===== EVENT HANDLERS =====
+  
+  /**
+   * Handle user login
+   * Called from: /src/app/components/LoginScreen.tsx
+   * Updates user PIN if setting for first time
+   */
   const handleLogin = async (user: User) => {
     // If user is setting PIN for first time, update it
     if (!user.pin || (user.pin && user.pin.length === 4)) {
@@ -172,12 +204,26 @@ export default function App() {
     toast.success(`Welcome, ${user.name}!`);
   };
 
+  /**
+   * Handle user logout
+   * Clears currentUser state, which triggers LoginScreen to show
+   */
   const handleLogout = () => {
     setCurrentUser(null);
     setLogs([]);
     toast.success("Logged out successfully");
   };
 
+  /**
+   * Handle save log (create or update)
+   * Called from: /src/app/components/AddLogDialog.tsx
+   * 
+   * FLOW:
+   * 1. Upload image to Supabase Storage if provided
+   * 2. Create/update log with image URL
+   * 3. Update local state
+   * 4. Show toast notification
+   */
   const handleSaveLog = async (
     logData: Omit<DesignLog, "id"> | DesignLog,
     imageFile?: File | null,
@@ -187,6 +233,7 @@ export default function App() {
         "id" in logData ? logData.imageUrl : undefined;
 
       // Upload image if provided
+      // Connects to: /src/app/api/logs.ts → uploadImage() → Supabase Storage
       if (imageFile) {
         imageUrl = await uploadImage(imageFile);
       }
@@ -221,16 +268,28 @@ export default function App() {
     }
   };
 
+  /**
+   * Handle edit log
+   * Opens AddLogDialog with log data pre-filled
+   */
   const handleEditLog = (log: DesignLog) => {
     setEditingLog(log);
     setDialogOpen(true);
   };
 
+  /**
+   * Handle view log
+   * Opens ViewLogDialog with log details
+   */
   const handleViewLog = (log: DesignLog) => {
     setViewingLog(log);
     setViewDialogOpen(true);
   };
 
+  /**
+   * Handle delete log
+   * Moves log to trash (soft delete)
+   */
   const handleDeleteLog = async (id: string) => {
     try {
       await deleteLog(id);
@@ -243,11 +302,19 @@ export default function App() {
     }
   };
 
+  /**
+   * Handle open dialog
+   * Opens AddLogDialog for creating a new log
+   */
   const handleOpenDialog = () => {
     setEditingLog(null);
     setDialogOpen(true);
   };
 
+  /**
+   * Handle update PIN
+   * Updates current user's PIN
+   */
   const handleUpdatePin = async (newPin: string) => {
     try {
       await updateUserPin(currentUser!.id, newPin);
@@ -261,6 +328,10 @@ export default function App() {
     }
   };
 
+  /**
+   * Handle update user PIN
+   * Admin function to update another user's PIN
+   */
   const handleUpdateUserPin = async (
     userId: string,
     newPin: string,
@@ -275,6 +346,10 @@ export default function App() {
     }
   };
 
+  /**
+   * Handle add user
+   * Admin function to add a new user
+   */
   const handleAddUser = async (name: string, role: string) => {
     try {
       await createUser(name, role);
@@ -286,6 +361,10 @@ export default function App() {
     }
   };
 
+  /**
+   * Handle delete user
+   * Admin function to delete a user
+   */
   const handleDeleteUser = async (userId: string) => {
     try {
       await deleteUser(userId);
@@ -297,6 +376,10 @@ export default function App() {
     }
   };
 
+  /**
+   * Handle add comment
+   * Adds a comment to a log
+   */
   const handleAddComment = async (
     logId: string,
     commentText: string,
@@ -319,6 +402,10 @@ export default function App() {
     }
   };
 
+  /**
+   * Handle restore log
+   * Restores a log from trash
+   */
   const handleRestoreLog = async (id: string) => {
     try {
       const restoredLog = await restoreLog(id);
@@ -334,6 +421,10 @@ export default function App() {
     }
   };
 
+  /**
+   * Handle permanent delete log
+   * Permanently deletes a log from the system
+   */
   const handlePermanentDeleteLog = async (id: string) => {
     try {
       await permanentDeleteLog(id);
