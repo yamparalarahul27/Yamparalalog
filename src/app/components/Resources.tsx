@@ -94,39 +94,57 @@ export function Resources({ currentUser }: ResourcesProps) {
           {resources.map((resource) => (
             <div
               key={resource.id}
-              className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+              className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <LinkIcon className="h-5 w-5 text-blue-600" />
-                  <h3 className="font-semibold">{resource.title}</h3>
+              {/* URL Preview Image */}
+              <div className="relative h-40 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center overflow-hidden">
+                <img
+                  src={`https://api.microlink.io/?url=${encodeURIComponent(resource.url)}&screenshot=true&meta=false&embed=screenshot.url`}
+                  alt={resource.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to favicon if screenshot fails
+                    const target = e.target as HTMLImageElement;
+                    const domain = new URL(resource.url).hostname;
+                    target.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+                    target.className = "w-16 h-16 object-contain";
+                  }}
+                />
+              </div>
+              
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <LinkIcon className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-semibold">{resource.title}</h3>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteResource(resource.id)}
+                  >
+                    <Trash2 className="h-4 w-4 text-gray-400" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteResource(resource.id)}
-                >
-                  <Trash2 className="h-4 w-4 text-gray-400" />
-                </Button>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                {resource.description}
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                  {resource.category}
-                </span>
-                <a
-                  href={resource.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  Open Link
-                </a>
-              </div>
-              <div className="text-xs text-gray-500 mt-3">
-                Added by {resource.addedBy} on {resource.addedDate}
+                <p className="text-sm text-gray-600 mb-3">
+                  {resource.description}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                    {resource.category}
+                  </span>
+                  <a
+                    href={resource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    Open Link
+                  </a>
+                </div>
+                <div className="text-xs text-gray-500 mt-3">
+                  Added by {resource.addedBy} on {resource.addedDate}
+                </div>
               </div>
             </div>
           ))}
