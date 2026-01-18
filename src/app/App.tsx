@@ -575,13 +575,13 @@ export default function App() {
               </Button>
 
               {/* Options Grouping Dropdown */}
-              <DropdownMenu modal={false}>
+              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2">
                     Options <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-white shadow-xl border border-gray-100 p-1 z-[100]">
+                <DropdownMenuContent align="end" className="w-48 bg-white shadow-xl z-[100]">
                   <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                     <Settings className="mr-2 h-4 w-4" /> Settings
                   </DropdownMenuItem>
