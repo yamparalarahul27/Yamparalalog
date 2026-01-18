@@ -778,7 +778,7 @@ export default function App() {
       <UPIDialog
         open={upiOpen}
         onOpenChange={setUpiOpen}
-        vpa="rahul.yamparala-1@okaxis"
+        vpa="8897132717@pthdfc"
         payeeName="Yamparala Rahul"
         userName={currentUser?.name || "User"}
       />
