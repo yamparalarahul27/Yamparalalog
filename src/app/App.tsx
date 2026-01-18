@@ -563,25 +563,25 @@ export default function App() {
                 Trash ({getDeletedLogs().length})
               </Button>
 
-              {/* Support Developer Button - Rounded + ₹ */}
+              {/* Support Developer Button - Rounded + ₹ + White Fill */}
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => setUpiOpen(true)}
-                className="hidden md:flex items-center gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-full border border-indigo-100 px-4"
+                className="hidden md:flex items-center gap-2 text-indigo-600 hover:text-indigo-700 bg-white hover:bg-indigo-50 rounded-full border border-indigo-100 px-4 transition-all duration-300 shadow-sm"
               >
                 <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse" />
                 ₹ Support Developer
               </Button>
 
               {/* Options Grouping Dropdown */}
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2">
                     Options <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-white">
+                <DropdownMenuContent align="end" className="w-48 bg-white shadow-xl border border-gray-100 p-1 z-[100]">
                   <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                     <Settings className="mr-2 h-4 w-4" /> Settings
                   </DropdownMenuItem>
