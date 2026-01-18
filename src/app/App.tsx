@@ -29,6 +29,7 @@ import { UserSettings } from "@/app/components/UserSettings"; // User PIN manage
 import { AdminPanel } from "@/app/components/AdminPanel"; // Admin user management dialog
 import { FilterBar } from "@/app/components/FilterBar"; // Filtering and view mode controls
 import { TrashDialog } from "@/app/components/TrashDialog"; // Deleted logs (trash bin) dialog
+import UPIDialog from "@/app/components/UPIDialog"; // UPI Payment dialog
 import { DesignLog, User } from "@/app/components/types"; // TypeScript interfaces
 import {
   Plus,
@@ -81,6 +82,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false); // User settings dialog
   const [adminPanelOpen, setAdminPanelOpen] = useState(false); // Admin panel dialog
   const [trashOpen, setTrashOpen] = useState(false); // Trash bin dialog
+  const [upiOpen, setUpiOpen] = useState(false); // UPI Payment dialog
 
   // Loading state
   const [loading, setLoading] = useState(true); // Logs loading state
@@ -552,6 +554,16 @@ export default function App() {
                 <Trash2 className="h-5 w-5" />
                 Trash ({getDeletedLogs().length})
               </Button>
+              {/* Support Developer Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setUpiOpen(true)}
+                className="hidden md:flex items-center gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+              >
+                <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse" />
+                Support Developer
+              </Button>
               <Button
                 onClick={() => setSettingsOpen(true)}
                 variant="outline"
@@ -745,6 +757,7 @@ export default function App() {
         onOpenChange={setSettingsOpen}
         currentUser={currentUser!}
         onUpdatePin={handleUpdatePin}
+        onOpenSupport={() => setUpiOpen(true)}
       />
       <AdminPanel
         open={adminPanelOpen}
@@ -761,6 +774,15 @@ export default function App() {
         onRestore={handleRestoreLog}
         onPermanentDelete={handlePermanentDeleteLog}
       />
+
+      <UPIDialog
+        open={upiOpen}
+        onOpenChange={setUpiOpen}
+        vpa="rahul.yamparala-1@okaxis"
+        payeeName="Yamparala Rahul"
+        userName={currentUser?.name || "User"}
+      />
+
       <Toaster />
     </div>
   );

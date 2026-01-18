@@ -16,6 +16,7 @@ interface UserSettingsProps {
   onOpenChange: (open: boolean) => void;
   currentUser: User;
   onUpdatePin: (newPin: string) => void;
+  onOpenSupport: () => void;
 }
 
 export function UserSettings({
@@ -23,6 +24,7 @@ export function UserSettings({
   onOpenChange,
   currentUser,
   onUpdatePin,
+  onOpenSupport,
 }: UserSettingsProps) {
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -131,21 +133,34 @@ export function UserSettings({
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
+              className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 gap-2 px-4 order-2 sm:order-1"
               onClick={() => {
-                setCurrentPin("");
-                setNewPin("");
-                setConfirmPin("");
-                setError("");
                 onOpenChange(false);
+                onOpenSupport();
               }}
             >
-              Cancel
+              Support Developer
             </Button>
-            <Button type="submit">Update PIN</Button>
+            <div className="flex gap-2 order-1 sm:order-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setCurrentPin("");
+                  setNewPin("");
+                  setConfirmPin("");
+                  setError("");
+                  onOpenChange(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Update PIN</Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
