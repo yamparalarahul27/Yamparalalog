@@ -233,7 +233,8 @@ export default function App() {
     if (!user.pin) {
       try {
         await updateUserPin(user.id, user.pin || "");
-        await loadUsers(); // Reload users to get updated data
+        // Optimization: Update local users state directly instead of full re-fetch
+        setUsers(users.map(u => u.id === user.id ? { ...u, pin: user.pin } : u));
       } catch (error) {
         console.error("Error updating PIN:", error);
       }
@@ -330,13 +331,19 @@ export default function App() {
    */
   const handleDeleteLog = async (id: string) => {
     try {
-      await deleteLog(id);
-      // Reload logs to get updated deleted status
-      await loadLogs();
+      // OPTIMISTIC UPDATE: Update UI instantly
+      setAllLogs(allLogs.filter(log => log.id !== id));
+      setLogs(logs.filter(log => log.id !== id));
+
       toast.success("Design log moved to trash");
+
+      // API call happens in the background
+      await deleteLog(id);
     } catch (error) {
       console.error("Error deleting log:", error);
       toast.error("Failed to delete design log");
+      // Rollback on error
+      loadLogs();
     }
   };
 
