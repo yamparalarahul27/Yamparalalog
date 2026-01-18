@@ -164,11 +164,11 @@ export default function App() {
 
       // Migration: Rename Admin role to Yamparala Rahul for better branding
       const migratedUsers = fetchedUsers.map((user) => {
-        if (user.id === "admin" && (user.role === "Admin" || user.name === "Admin")) {
+        if (user.id === "admin") {
           return {
             ...user,
-            name: "Admin",
-            role: "Yamparala Rahul",
+            name: "Yamparala Rahul",
+            role: "Lead Developer",
           };
         }
         return user;
@@ -198,7 +198,7 @@ export default function App() {
 
       // Filter logs based on user role
       let filteredLogs = fetchedLogs;
-      if (currentUser?.role !== "Admin") {
+      if (currentUser?.id !== "admin") {
         // Regular users only see their own logs
         filteredLogs = fetchedLogs.filter(
           (log) => log.userId === currentUser?.id,
@@ -229,8 +229,8 @@ export default function App() {
    * Updates user PIN if setting for first time
    */
   const handleLogin = async (user: User) => {
-    // If user is setting PIN for first time, update it
-    if (!user.pin || (user.pin && user.pin.length === 4)) {
+    // If user is setting PIN for first time (has no PIN), update it
+    if (!user.pin) {
       try {
         await updateUserPin(user.id, user.pin || "");
         await loadUsers(); // Reload users to get updated data
@@ -553,7 +553,7 @@ export default function App() {
                 <Settings className="h-5 w-5" />
                 Settings
               </Button>
-              {currentUser.role === "Admin" && (
+              {currentUser.id === "admin" && (
                 <Button
                   onClick={() => setAdminPanelOpen(true)}
                   variant="outline"
@@ -618,7 +618,7 @@ export default function App() {
           {/* Logs Tab Content */}
           <TabsContent value="logs" className="mt-6">
             {/* User Tabs (Admin Only) */}
-            {currentUser.role === "Admin" && users.length > 0 && (
+            {currentUser.id === "admin" && users.length > 0 && (
               <div className="mb-6">
                 <Tabs
                   value={selectedTab}

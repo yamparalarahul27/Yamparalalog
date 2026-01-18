@@ -66,7 +66,7 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
         ...resourceData,
         addedBy: currentUser.name,
         addedById: currentUser.id,
-        isAdminResource: currentUser.role === "Admin", // Flag for section separation
+        isAdminResource: currentUser.id === "admin", // Flag for section separation
       });
       setResources([newResource, ...resources]);
       toast.success("Resource added successfully");

@@ -22,14 +22,14 @@ export function DesignLogCard({ log, onEdit, onDelete, currentUser, onAddComment
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
-    
+
     setIsAddingComment(true);
     await onAddComment(log.id, newComment);
     setNewComment("");
     setIsAddingComment(false);
   };
 
-  const isAdmin = currentUser.role === "Admin";
+  const isAdmin = currentUser.id === "admin";
   const isOwnLog = log.userId === currentUser.id;
   const canAddComment = isAdmin && !isOwnLog;
 

@@ -143,7 +143,7 @@ export function Wiki({ currentUser }: WikiProps) {
   const filteredPages = pages
     .filter(page =>
       (page.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-       page.content.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        page.content.toLowerCase().includes(searchQuery.toLowerCase())) &&
       (tagFilter === "all" || page.tag === tagFilter)
     );
 
@@ -185,20 +185,20 @@ export function Wiki({ currentUser }: WikiProps) {
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
       /^([a-zA-Z0-9_-]{11})$/, // Direct video ID
     ];
-    
+
     for (const pattern of patterns) {
       const match = url.match(pattern);
       if (match && match[1]) {
         return match[1];
       }
     }
-    
+
     return null;
   };
 
   const handleAddComment = async () => {
     if (!selectedPage || !commentText.trim()) return;
-    
+
     try {
       const newComment: WikiComment = {
         id: Date.now().toString(),
@@ -207,12 +207,12 @@ export function Wiki({ currentUser }: WikiProps) {
         authorId: currentUser.id,
         date: new Date().toISOString(),
       };
-      
+
       const updatedComments = [...(selectedPage.comments || []), newComment];
       const updatedPage = await updateWikiPage(selectedPage.id, {
         comments: updatedComments,
       });
-      
+
       setPages(pages.map(p => p.id === selectedPage.id ? updatedPage : p));
       setSelectedPage(updatedPage);
       toast.success("Comment added");
@@ -237,7 +237,7 @@ export function Wiki({ currentUser }: WikiProps) {
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -247,7 +247,7 @@ export function Wiki({ currentUser }: WikiProps) {
               className="pl-9"
             />
           </div>
-          
+
           {/* Tag Filter */}
           <div className="mt-3">
             <label className="text-xs font-medium mb-1 block text-gray-600">Filter by Tag</label>
@@ -273,9 +273,8 @@ export function Wiki({ currentUser }: WikiProps) {
             filteredPages.map((page) => (
               <Card
                 key={page.id}
-                className={`p-3 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  selectedPage?.id === page.id ? 'border-blue-500 bg-blue-50' : ''
-                }`}
+                className={`p-3 cursor-pointer hover:bg-gray-50 transition-colors ${selectedPage?.id === page.id ? 'border-blue-500 bg-blue-50' : ''
+                  }`}
                 onClick={() => {
                   setSelectedPage(page);
                   setIsEditing(false);
@@ -285,11 +284,10 @@ export function Wiki({ currentUser }: WikiProps) {
                   <h3 className="font-medium text-sm line-clamp-1 flex-1">{page.title}</h3>
                   {page.tag && (
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${
-                        page.tag === 'Design Team'
+                      className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${page.tag === 'Design Team'
                           ? 'bg-purple-100 text-purple-700'
                           : 'bg-green-100 text-green-700'
-                      }`}
+                        }`}
                     >
                       {page.tag}
                     </span>
@@ -360,7 +358,7 @@ export function Wiki({ currentUser }: WikiProps) {
                 className="min-h-[400px] font-mono text-sm"
               />
             </div>
-            
+
             {/* Images Section */}
             <div>
               <label className="text-sm font-medium mb-2 block">Images</label>
@@ -490,11 +488,10 @@ export function Wiki({ currentUser }: WikiProps) {
                   <h1 className="text-3xl font-bold">{selectedPage.title}</h1>
                   {selectedPage.tag && (
                     <span
-                      className={`text-xs px-3 py-1 rounded-full flex items-center gap-1.5 ${
-                        selectedPage.tag === 'Design Team'
+                      className={`text-xs px-3 py-1 rounded-full flex items-center gap-1.5 ${selectedPage.tag === 'Design Team'
                           ? 'bg-purple-100 text-purple-700'
                           : 'bg-green-100 text-green-700'
-                      }`}
+                        }`}
                     >
                       <Tag className="h-3 w-3" />
                       {selectedPage.tag}
@@ -521,7 +518,7 @@ export function Wiki({ currentUser }: WikiProps) {
                   Edit
                 </Button>
                 {/* Only show delete button if user is Admin or the creator */}
-                {(currentUser.role === "Admin" || selectedPage.createdBy === currentUser.id) && (
+                {(currentUser.id === "admin" || selectedPage.createdBy === currentUser.id) && (
                   <Button
                     size="sm"
                     variant="outline"

@@ -135,7 +135,7 @@ export function AdminPanel({
                     <Pencil className="h-4 w-4 mr-1" />
                     Set PIN
                   </Button>
-                  {user.role !== "Admin" && (
+                  {user.id !== "admin" && (
                     <Button
                       size="sm"
                       variant="ghost"

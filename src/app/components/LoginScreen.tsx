@@ -48,7 +48,7 @@ export function LoginScreen({ users, onLogin, loading = false }: LoginScreenProp
     setError("");
 
     // Simulate a brief delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     // Check if user doesn't require PIN authentication (e.g., New_Join)
     if (selectedUser.requiresPin === false) {
