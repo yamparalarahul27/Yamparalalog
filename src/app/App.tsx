@@ -40,6 +40,7 @@ import {
   Trash2,
   BookOpen,
   FolderOpen,
+  ChevronDown,
 } from "lucide-react"; // Icons
 import {
   Tabs,
@@ -47,6 +48,13 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@/app/components/ui/tabs"; // Tab navigation component
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/app/components/ui/dropdown-menu";
 import {
   fetchLogs,
   createLog,
@@ -554,42 +562,43 @@ export default function App() {
                 <Trash2 className="h-5 w-5" />
                 Trash ({getDeletedLogs().length})
               </Button>
-              {/* Support Developer Button */}
+
+              {/* Support Developer Button - Rounded + ₹ */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setUpiOpen(true)}
-                className="hidden md:flex items-center gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                className="hidden md:flex items-center gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-full border border-indigo-100 px-4"
               >
                 <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse" />
-                Support Developer
+                ₹ Support Developer
               </Button>
-              <Button
-                onClick={() => setSettingsOpen(true)}
-                variant="outline"
-                className="gap-2"
-              >
-                <Settings className="h-5 w-5" />
-                Settings
-              </Button>
-              {currentUser.id === "admin" && (
-                <Button
-                  onClick={() => setAdminPanelOpen(true)}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <Users className="h-5 w-5" />
-                  Admin Panel
-                </Button>
-              )}
-              <Button
-                onClick={handleLogout}
-                variant="outline"
-                className="gap-2"
-              >
-                <LogOut className="h-5 w-5" />
-                Logout
-              </Button>
+
+              {/* Options Grouping Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    Options <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-white">
+                  <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                    <Settings className="mr-2 h-4 w-4" /> Settings
+                  </DropdownMenuItem>
+                  {currentUser.id === "admin" && (
+                    <DropdownMenuItem onClick={() => setAdminPanelOpen(true)}>
+                      <Users className="mr-2 h-4 w-4" /> Admin Panel
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" /> Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           <p className="text-gray-600">
