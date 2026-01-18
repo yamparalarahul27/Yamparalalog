@@ -168,7 +168,7 @@ export default function App() {
           return {
             ...user,
             name: "Yamparala Rahul",
-            role: "Lead Developer",
+            role: "Lead Design Engineer",
           };
         }
         return user;

@@ -11,7 +11,7 @@ RECENT CHANGES & REFINEMENTS (JAN 2026)
 - App Name changed to: "Yamparala Dev App" (Header, Login, Title).
 - Admin User Identity: 
   - Display Name: "Yamparala Rahul"
-  - Role Title: "Lead Developer" (or role text renamed to "Yamparala Rahul")
+  - Role Title: "Lead Design Engineer" (or role text renamed to "Yamparala Rahul")
 - App Logo: Replaced default icon with custom image `public/images/app-logo.png`.
 - Background: Custom marble/blue wallpaper applied to the main container.
 

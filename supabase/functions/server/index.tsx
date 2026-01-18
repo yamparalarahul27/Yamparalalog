@@ -43,7 +43,7 @@ const initializeUsers = async () => {
     {
       id: "admin",
       name: "Yamparala Rahul",
-      role: "Lead Developer",
+      role: "Lead Design Engineer",
       pin: "2703",
       requiresPin: true,
       accessibleTabs: ["wiki", "logs", "resources"]
