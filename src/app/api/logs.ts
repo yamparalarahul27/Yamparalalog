@@ -1,3 +1,19 @@
+/**
+ * api/logs.ts
+ * API Service Layer for Design Logs.
+ * 
+ * CORE RESPONSIBILITIES:
+ * - Direct communication with the Supabase Edge Function (`make-server-*`).
+ * - CRUD operations for design logs (Fetch, Create, Update, Delete, Restore).
+ * - Media handling: Image upload to Supabase storage.
+ * - Social features: Adding comments to specific logs.
+ * 
+ * LINKAGE:
+ * - Imported by: `src/app/App.tsx` for main data orchestration.
+ * - Imports: `src/app/components/types.ts` for DesignLog and Comment interfaces.
+ * - Config: Uses `utils/supabase/info` for project credentials.
+ */
+
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { DesignLog, Comment } from "@/app/components/types";
 

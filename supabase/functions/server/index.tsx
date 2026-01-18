@@ -1,3 +1,19 @@
+/**
+ * supabase/functions/server/index.tsx (Backend)
+ * The main server-side logic for the application (Supabase Edge Function).
+ * 
+ * CORE RESPONSIBILITIES:
+ * - Request Routing: Uses Hono.js to route API calls (GET, POST, PUT, DELETE).
+ * - Middleware: Implements CORS and logging.
+ * - Persistent Storage: Manages data in Supabase KV store (via `kv_store.tsx`).
+ * - Media Management: Handles image uploads to Supabase Storage buckets.
+ * - Data Initialization: Seeds default users (including Admin and Design Team) on startup.
+ * 
+ * LINKAGE:
+ * - Frontend Connection: Called by `src/app/api/*` services in the frontend.
+ * - Storage: Interacts directly with Supabase Storage and KV.
+ */
+
 import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
@@ -26,8 +42,8 @@ const initializeUsers = async () => {
   const defaultUsers = [
     {
       id: "admin",
-      name: "Admin",
-      role: "Admin",
+      name: "Yamparala Rahul",
+      role: "Lead Developer",
       pin: "2703",
       requiresPin: true,
       accessibleTabs: ["wiki", "logs", "resources"]
@@ -66,7 +82,7 @@ const initializeUsers = async () => {
       await kv.set(`user:${user.id}`, user);
     } else {
       console.log(`User already exists: ${user.name} (${user.id})`);
-      
+
       // Migrate existing users to add new fields if they don't have them
       if (existingUser.requiresPin === undefined || !existingUser.accessibleTabs) {
         console.log(`Migrating user to new schema: ${user.name} (${user.id})`);
@@ -120,7 +136,7 @@ app.post("/make-server-e66bfe94/logs", async (c) => {
     const log = await c.req.json();
     const logId = Date.now().toString();
     const logWithId = { ...log, id: logId };
-    
+
     await kv.set(`log:${logId}`, logWithId);
     return c.json({ log: logWithId }, 201);
   } catch (error) {
@@ -134,12 +150,12 @@ app.put("/make-server-e66bfe94/logs/:id", async (c) => {
   try {
     const id = c.req.param("id");
     const updates = await c.req.json();
-    
+
     const existing = await kv.get(`log:${id}`);
     if (!existing) {
       return c.json({ error: "Log not found" }, 404);
     }
-    
+
     const updatedLog = { ...existing, ...updates, id };
     await kv.set(`log:${id}`, updatedLog);
     return c.json({ log: updatedLog });
@@ -153,19 +169,19 @@ app.put("/make-server-e66bfe94/logs/:id", async (c) => {
 app.delete("/make-server-e66bfe94/logs/:id", async (c) => {
   try {
     const id = c.req.param("id");
-    
+
     const existing = await kv.get(`log:${id}`);
     if (!existing) {
       return c.json({ error: "Log not found" }, 404);
     }
-    
+
     // Soft delete - mark as deleted
     const deletedLog = {
       ...existing,
       deleted: true,
       deletedAt: new Date().toISOString(),
     };
-    
+
     await kv.set(`log:${id}`, deletedLog);
     return c.json({ success: true });
   } catch (error) {
@@ -178,19 +194,19 @@ app.delete("/make-server-e66bfe94/logs/:id", async (c) => {
 app.post("/make-server-e66bfe94/logs/:id/restore", async (c) => {
   try {
     const id = c.req.param("id");
-    
+
     const existing = await kv.get(`log:${id}`);
     if (!existing) {
       return c.json({ error: "Log not found" }, 404);
     }
-    
+
     // Remove deleted flags
     const restoredLog = {
       ...existing,
       deleted: false,
       deletedAt: undefined,
     };
-    
+
     await kv.set(`log:${id}`, restoredLog);
     return c.json({ log: restoredLog });
   } catch (error) {
@@ -216,7 +232,7 @@ app.post("/make-server-e66bfe94/upload-image", async (c) => {
   try {
     const formData = await c.req.formData();
     const file = formData.get("file") as File;
-    
+
     if (!file) {
       return c.json({ error: "No file provided" }, 400);
     }
@@ -267,12 +283,12 @@ app.put("/make-server-e66bfe94/users/:id/pin", async (c) => {
   try {
     const id = c.req.param("id");
     const { pin } = await c.req.json();
-    
+
     const existing = await kv.get(`user:${id}`);
     if (!existing) {
       return c.json({ error: "User not found" }, 404);
     }
-    
+
     const updatedUser = { ...existing, pin };
     await kv.set(`user:${id}`, updatedUser);
     return c.json({ user: updatedUser });
@@ -288,7 +304,7 @@ app.post("/make-server-e66bfe94/users", async (c) => {
     const { name, role } = await c.req.json();
     const userId = name.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
     const newUser = { id: userId, name, role, pin: "" };
-    
+
     await kv.set(`user:${userId}`, newUser);
     return c.json({ user: newUser }, 201);
   } catch (error) {
@@ -314,25 +330,25 @@ app.post("/make-server-e66bfe94/logs/:id/comments", async (c) => {
   try {
     const logId = c.req.param("id");
     const commentData = await c.req.json();
-    
+
     const existing = await kv.get(`log:${logId}`);
     if (!existing) {
       return c.json({ error: "Log not found" }, 404);
     }
-    
+
     // Create new comment with unique ID and timestamp
     const newComment = {
       id: Date.now().toString(),
       ...commentData,
       date: new Date().toISOString().split("T")[0],
     };
-    
+
     // Add comment to log
     const updatedLog = {
       ...existing,
       comments: [...(existing.comments || []), newComment],
     };
-    
+
     await kv.set(`log:${logId}`, updatedLog);
     return c.json({ log: updatedLog });
   } catch (error) {
@@ -358,7 +374,7 @@ app.post("/make-server-e66bfe94/wiki", async (c) => {
     const page = await c.req.json();
     const pageId = Date.now().toString();
     const pageWithId = { ...page, id: pageId };
-    
+
     await kv.set(`wiki:${pageId}`, pageWithId);
     return c.json({ page: pageWithId }, 201);
   } catch (error) {
@@ -372,12 +388,12 @@ app.put("/make-server-e66bfe94/wiki/:id", async (c) => {
   try {
     const id = c.req.param("id");
     const updates = await c.req.json();
-    
+
     const existing = await kv.get(`wiki:${id}`);
     if (!existing) {
       return c.json({ error: "Wiki page not found" }, 404);
     }
-    
+
     const updatedPage = { ...existing, ...updates, id };
     await kv.set(`wiki:${id}`, updatedPage);
     return c.json({ page: updatedPage });
@@ -416,7 +432,7 @@ app.post("/make-server-e66bfe94/resources", async (c) => {
     const resource = await c.req.json();
     const resourceId = Date.now().toString();
     const resourceWithId = { ...resource, id: resourceId };
-    
+
     await kv.set(`resource:${resourceId}`, resourceWithId);
     return c.json({ resource: resourceWithId }, 201);
   } catch (error) {
@@ -430,12 +446,12 @@ app.put("/make-server-e66bfe94/resources/:id", async (c) => {
   try {
     const id = c.req.param("id");
     const updates = await c.req.json();
-    
+
     const existing = await kv.get(`resource:${id}`);
     if (!existing) {
       return c.json({ error: "Resource not found" }, 404);
     }
-    
+
     const updatedResource = { ...existing, ...updates, id };
     await kv.set(`resource:${id}`, updatedResource);
     return c.json({ resource: updatedResource });

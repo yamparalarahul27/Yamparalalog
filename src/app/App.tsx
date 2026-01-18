@@ -1,3 +1,19 @@
+/**
+ * main/App.tsx
+ * The root component of the Design Log Tracker application.
+ * 
+ * CORE RESPONSIBILITIES:
+ * - State Management: Orchestrates users, logs, and UI states (dialogs, tabs, filters).
+ * - Authentication: Handles login/logout via PIN verification.
+ * - API Orchestration: Coordinates data fetching and updates between frontend and Supabase.
+ * - Layout: Renders the primary navigation (Tabs) and conditional UI based on user role.
+ * 
+ * RELATIONSHIPS:
+ * - Links to `src/app/api/*`: For all backend interactions (Logs and Users).
+ * - Links to `src/app/components/*`: Uses all UI components for rendering the dashboard, wiki, and logs.
+ * - Links to `src/app/components/types.ts`: Uses shared TypeScript interfaces for data consistency.
+ */
+
 import { useState, useEffect } from "react";
 import { toast, Toaster } from "sonner"; // Toast notifications
 import { LoginScreen } from "@/app/components/LoginScreen"; // PIN authentication UI
@@ -52,11 +68,11 @@ export default function App() {
   // User-related state
   const [users, setUsers] = useState<User[]>([]); // All users in system
   const [currentUser, setCurrentUser] = useState<User | null>(null); // Currently logged in user
-  
+
   // Log-related state
   const [allLogs, setAllLogs] = useState<DesignLog[]>([]); // All logs from backend (filtered by role)
   const [logs, setLogs] = useState<DesignLog[]>([]); // Filtered/sorted logs for display
-  
+
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false); // Add/Edit log dialog
   const [editingLog, setEditingLog] = useState<DesignLog | null>(null); // Log being edited
@@ -65,11 +81,11 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false); // User settings dialog
   const [adminPanelOpen, setAdminPanelOpen] = useState(false); // Admin panel dialog
   const [trashOpen, setTrashOpen] = useState(false); // Trash bin dialog
-  
+
   // Loading state
   const [loading, setLoading] = useState(true); // Logs loading state
   const [usersLoading, setUsersLoading] = useState(true); // Users loading state
-  
+
   // Navigation and filtering
   const [selectedTab, setSelectedTab] = useState(""); // Selected user tab (Admin only)
   const [selectedCategory, setSelectedCategory] = useState("all"); // Category filter
@@ -78,7 +94,7 @@ export default function App() {
   const [mainTab, setMainTab] = useState<"wiki" | "logs" | "resources">("logs"); // Top-level tab
 
   // ===== EFFECTS =====
-  
+
   // Load users on app mount
   useEffect(() => {
     loadUsers();
@@ -97,7 +113,7 @@ export default function App() {
     if (currentUser && !selectedTab) {
       setSelectedTab(currentUser.id);
     }
-    
+
     // Set default tab based on user's accessible tabs
     if (currentUser && currentUser.accessibleTabs) {
       const tabs = currentUser.accessibleTabs;
@@ -137,7 +153,7 @@ export default function App() {
   }, [selectedTab, allLogs, selectedCategory, sortBy]);
 
   // ===== DATA LOADING FUNCTIONS =====
-  
+
   /**
    * Load all users from backend
    * Connects to: /src/app/api/users.ts → /supabase/functions/server/index.tsx → KV store (user:*)
@@ -145,7 +161,20 @@ export default function App() {
   const loadUsers = async () => {
     try {
       const fetchedUsers = await fetchUsers();
-      setUsers(fetchedUsers);
+
+      // Migration: Rename Admin role to Yamparala Rahul for better branding
+      const migratedUsers = fetchedUsers.map((user) => {
+        if (user.id === "admin" && (user.role === "Admin" || user.name === "Admin")) {
+          return {
+            ...user,
+            name: "Admin",
+            role: "Yamparala Rahul",
+          };
+        }
+        return user;
+      });
+
+      setUsers(migratedUsers);
     } catch (error) {
       console.error("Error loading users:", error);
       toast.error("Failed to load users");
@@ -193,7 +222,7 @@ export default function App() {
   };
 
   // ===== EVENT HANDLERS =====
-  
+
   /**
    * Handle user login
    * Called from: /src/app/components/LoginScreen.tsx
@@ -477,19 +506,19 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header and controls - contained */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <FileText className="h-6 w-6 text-white" />
+              <div className="size-10 overflow-hidden rounded-lg shadow-sm">
+                <img src="/images/app-logo.png" alt="App Logo" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold">
-                  Design Logs
+                  Yamparala Dev App
                 </h1>
                 <p className="text-sm text-gray-600">
                   Logged in as:{" "}

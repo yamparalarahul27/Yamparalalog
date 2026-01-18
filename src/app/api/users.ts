@@ -1,3 +1,17 @@
+/**
+ * api/users.ts
+ * API Service Layer for User Management.
+ * 
+ * CORE RESPONSIBILITIES:
+ * - Direct communication with the Supabase Edge Function (`make-server-*`).
+ * - CRUD operations for system users (Fetch, Create, Delete).
+ * - Security management: Updating user PINs.
+ * 
+ * LINKAGE:
+ * - Imported by: `src/app/App.tsx` (for session and user list management) and `src/app/components/AdminPanel.tsx`.
+ * - Imports: `src/app/components/types.ts` for User interface.
+ */
+
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { User } from "@/app/components/types";
 

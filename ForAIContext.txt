@@ -1,10 +1,32 @@
 ================================================================================
 DESIGN LOGS TRACKING APPLICATION - AI CONTEXT DOCUMENTATION
 ================================================================================
-Last Updated: January 17, 2026
+Last Updated: January 18, 2026
 
 ================================================================================
-1. APPLICATION OVERVIEW
+RECENT CHANGES & REFINEMENTS (JAN 2026)
+================================================================================
+
+1. BRANDING & IDENTITY:
+- App Name changed to: "Yamparala Dev App" (Header, Login, Title).
+- Admin User Identity: 
+  - Display Name: "Yamparala Rahul"
+  - Role Title: "Lead Developer" (or role text renamed to "Yamparala Rahul")
+- App Logo: Replaced default icon with custom image `public/images/app-logo.png`.
+- Background: Custom marble/blue wallpaper applied to the main container.
+
+2. LOGIN SCREEN ENHANCEMENTS:
+- User Grouping: "Praveen" and "Shaina Mishra" are now grouped under an expandable "Design Team Users" section.
+- Layout: Horizontal 3-column grid layout for desktop; vertical list for mobile.
+- Visuals: Expanded group has a subtle grey background for distinction.
+
+3. DASHBOARD REFINEMENTS:
+- Statistics Icon: The "This Month" calendar icon replaced with a custom high-quality image (`calendar-custom.png`).
+- Layout: Modern icon-only (or image-only) look without the green background for customized stats.
+
+4. UI CONSISTENCY:
+- Buttons: All system buttons updated to be fully rounded (`rounded-full`).
+- Documentation: Added comprehensive header comments to all core source files explaining functionality and file linkages.
 ================================================================================
 
 This is a comprehensive Design Logs Tracking Application built with:

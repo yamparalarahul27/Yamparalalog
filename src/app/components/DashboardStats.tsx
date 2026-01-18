@@ -1,3 +1,18 @@
+/**
+ * components/DashboardStats.tsx
+ * Visual representation of project metrics.
+ * 
+ * CORE RESPONSIBILITIES:
+ * - Data Aggregation: Calculates total logs, categories, and logs created in the current month.
+ * - Visual Display: Renders statistical cards with icons or custom images.
+ * - State Filtering: Hides stats for users with restricted access (e.g., "New_Join").
+ * - Customization: Supports custom image overrides for specific stats (e.g., the calendar image).
+ * 
+ * LINKAGE:
+ * - Parent: `src/app/App.tsx` (receives `allLogs` and `currentUser` as props).
+ * - Imports: `src/app/components/types.ts` for DesignLog and User interfaces.
+ */
+
 import { DesignLog, User } from "@/app/components/types";
 import { FileText, Calendar, Tag } from "lucide-react";
 
@@ -16,7 +31,7 @@ export function DashboardStats({ logs, currentUser }: DashboardStatsProps) {
   const totalLogs = logs.length;
   const categories = new Set(logs.map(log => log.category).filter(Boolean));
   const totalCategories = categories.size;
-  
+
   // Get current month logs
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
@@ -35,7 +50,7 @@ export function DashboardStats({ logs, currentUser }: DashboardStatsProps) {
     {
       label: "This Month",
       value: logsThisMonth,
-      icon: Calendar,
+      imageUrl: "/images/calendar-custom.png",
       color: "bg-green-100 text-green-600",
     },
     {
@@ -49,7 +64,6 @@ export function DashboardStats({ logs, currentUser }: DashboardStatsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
       {stats.map((stat) => {
-        const Icon = stat.icon;
         return (
           <div
             key={stat.label}
@@ -62,9 +76,13 @@ export function DashboardStats({ logs, currentUser }: DashboardStatsProps) {
                 </p>
                 <p className="text-3xl font-bold">{stat.value}</p>
               </div>
-              <div className={`p-3 rounded-lg ${stat.color}`}>
-                <Icon className="h-6 w-6" />
-              </div>
+              {'imageUrl' in stat ? (
+                <img src={stat.imageUrl as string} alt={stat.label} className="h-12 w-12 object-contain" />
+              ) : (
+                <div className={`p-3 rounded-lg ${stat.color}`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+              )}
             </div>
           </div>
         );

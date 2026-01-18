@@ -1,3 +1,16 @@
+/**
+ * components/types.ts
+ * Centralized TypeScript Interface Definitions.
+ * 
+ * CORE RESPONSIBILITIES:
+ * - Data Consistency: Defines the "Source of Truth" for all data structures in the app.
+ * - Type Safety: Ensures all components and API calls adhere to the same data models.
+ * 
+ * LINKAGE:
+ * - Global: Imported by nearly every file in `src/app/` (App, components, API services).
+ * - Backend: Data structures here must align with the KV store objects in the Supabase function.
+ */
+
 export interface User {
   id: string;
   name: string;

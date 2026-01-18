@@ -33,7 +33,7 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
   const [selectedUser, setSelectedUser] = useState("all"); // User filter
 
   // ===== EFFECTS =====
-  
+
   // Load resources on component mount
   useEffect(() => {
     loadResources();
@@ -109,7 +109,7 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
   };
 
   // ===== FILTERING LOGIC =====
-  
+
   // Separate resources into Admin and User sections
   const adminResources = resources.filter((r) => r.isAdminResource);
   const userResources = resources.filter((r) => !r.isAdminResource);
@@ -121,22 +121,22 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
    */
   const filterResources = (resourceList: Resource[]) => {
     let filtered = resourceList;
-    
+
     // Category filter
     if (selectedCategory !== "all") {
       filtered = filtered.filter((r) => r.category === selectedCategory);
     }
-    
+
     // User filter
     if (selectedUser !== "all") {
       filtered = filtered.filter((r) => r.addedById === selectedUser);
     }
-    
+
     // Sort by date (newest first)
     filtered = filtered.sort((a, b) => {
       return new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime();
     });
-    
+
     return filtered;
   };
 
@@ -184,7 +184,7 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
           }}
         />
       </div>
-      
+
       <div className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2 flex-1">
@@ -228,24 +228,28 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
    */
   const formatDateTime = (isoString: string): string => {
     const date = new Date(isoString);
-    
+
     const day = date.getDate();
     const month = date.toLocaleString('en-US', { month: 'short' });
     const year = date.getFullYear();
-    
+
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours % 12 || 12;
     const displayMinutes = minutes.toString().padStart(2, '0');
-    
+
     return `${day} ${month} ${year}, ${displayHours}:${displayMinutes} ${ampm}`;
   };
 
   if (loading) {
     return (
       <div className="text-center py-16">
-        <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4 animate-pulse" />
+        <img
+          src="/images/resource-folder-icon.png"
+          alt="Loading..."
+          className="w-24 h-24 object-contain mx-auto mb-4 animate-pulse opacity-80"
+        />
         <p className="text-gray-600">Loading resources...</p>
       </div>
     );
@@ -306,7 +310,11 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
       {/* Resources Display */}
       {resources.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-          <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <img
+            src="/images/resource-folder-icon.png"
+            alt="No resources"
+            className="w-32 h-32 object-contain mx-auto mb-4 hover:scale-105 transition-transform duration-300"
+          />
           <h3 className="text-lg font-semibold mb-2">No resources yet</h3>
           <p className="text-gray-600 mb-4">
             Start adding useful links and resources for your team
