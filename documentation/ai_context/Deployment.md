@@ -11,6 +11,18 @@
 - `SUPABASE_URL`: Required env var on server.
 - `SUPABASE_SERVICE_ROLE_KEY`: Required env var on server for KV store access.
 
+## Vercel Configuration
+
+### Important: Base Path Settings
+- **DO NOT** set a `base` path in `vite.config.ts` for Vercel deployments
+- Vercel serves from the root path (`/`), not a subdirectory
+- If you see a blank page or 404 errors for assets, check that `base` is not configured
+
+### Environment Variables (Vercel Dashboard)
+Set these in your Vercel project settings:
+- `VITE_SUPABASE_URL`: Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+
 ## Deployment Checklist
 1. **Supabase Functions**:
    ```bash
@@ -18,8 +30,8 @@
    ```
 2. **Vite Frontend**:
    - Push to GitHub.
-   - Connect to Vercel.
-   - Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+   - Vercel auto-deploys on push to `main` branch.
+   - Verify environment variables are set in Vercel dashboard.
 
 ## CI/CD Pipeline
 - **GitHub Actions**: (To be implemented)
