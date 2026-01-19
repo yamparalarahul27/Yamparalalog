@@ -567,8 +567,12 @@ export default function App() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setUpiOpen(true)}
-                className="hidden md:flex items-center gap-2 text-indigo-600 hover:text-indigo-700 bg-white hover:bg-indigo-50 rounded-full border border-indigo-100 px-4 transition-all duration-300 shadow-sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setUpiOpen(true);
+                }}
+                className="hidden md:flex items-center gap-2 text-indigo-600 hover:text-indigo-700 bg-white hover:bg-indigo-50 rounded-full border border-indigo-100 px-4 shadow-sm"
               >
                 <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse" />
                 ₹ Support Developer
@@ -576,26 +580,38 @@ export default function App() {
 
               {/* Options Grouping Dropdown */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    Options <ChevronDown className="h-4 w-4" />
-                  </Button>
+                <DropdownMenuTrigger
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-200 bg-white rounded-full hover:bg-gray-50 transition-colors focus:outline-none cursor-pointer"
+                >
+                  Options <ChevronDown className="h-4 w-4" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-white shadow-xl z-[100]">
-                  <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                    <Settings className="mr-2 h-4 w-4" /> Settings
+                <DropdownMenuContent align="end" className="w-56 bg-white shadow-2xl z-[999] p-1 border border-gray-100">
+                  <DropdownMenuItem
+                    className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
                   </DropdownMenuItem>
+
                   {currentUser.id === "admin" && (
-                    <DropdownMenuItem onClick={() => setAdminPanelOpen(true)}>
-                      <Users className="mr-2 h-4 w-4" /> Admin Panel
+                    <DropdownMenuItem
+                      className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md"
+                      onClick={() => setAdminPanelOpen(true)}
+                    >
+                      <Users className="h-4 w-4" />
+                      <span>Admin Panel</span>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuSeparator />
+
+                  <DropdownMenuSeparator className="my-1 bg-gray-100 h-px" />
+
                   <DropdownMenuItem
+                    className="flex items-center gap-2 px-3 py-2 cursor-pointer text-red-600 hover:bg-red-50 rounded-md"
                     onClick={handleLogout}
-                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
                   >
-                    <LogOut className="mr-2 h-4 w-4" /> Logout
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
