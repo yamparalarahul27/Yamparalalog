@@ -12,7 +12,8 @@ MANDATORY CONTEXT LOADING ORDER (MANDATORY):
 5. Database.md              (NOT SQL - Supabase KV Store usage only)
 6. Testing.md               (Treat test cases as behavioral contracts)
 7. Deployment.md            (Follow infra & env constraints)
-8. PM_Interconnections.md   (Preserve data flow relationships)
+8. Process.md               (Follow dev & deployment workflow)
+9. PM_Interconnections.md   (Preserve data flow relationships)
 
 STRICT RULES (NON-NEGOTIABLE):
 - Do NOT assume SQL, ORM, or relational databases.
