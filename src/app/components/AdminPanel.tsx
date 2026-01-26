@@ -37,8 +37,6 @@ export function AdminPanel({
   const [newUserName, setNewUserName] = useState("");
   const [newUserRole, setNewUserRole] = useState("");
 
-  const [toggleLoading, setToggleLoading] = useState<string | null>(null);
-
   const handleUpdatePin = () => {
     if (editingUser && newPin.length === 4) {
       onUpdateUserPin(editingUser.id, newPin);
@@ -158,7 +156,9 @@ export function AdminPanel({
                             checked={hasAccess}
                             disabled={isAdmin}
                             onChange={() => {
-                              onUpdateUserAccess(user.id, feature, !hasAccess);
+                              if (!isAdmin) {
+                                onUpdateUserAccess(user.id, feature, !hasAccess);
+                              }
                             }}
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50"
                           />
