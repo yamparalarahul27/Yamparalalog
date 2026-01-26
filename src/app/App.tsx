@@ -417,7 +417,8 @@ export default function App() {
       if (!targetUser) return;
 
       // Calculate new tabs
-      const currentTabs = targetUser.accessibleTabs || ["resources"]; // Default to Resources if undefined
+      // Use empty array if undefined (don't assume default - let backend handle defaults for new users)
+      const currentTabs = targetUser.accessibleTabs || [];
       let newTabs: string[];
 
       if (enabled) {
