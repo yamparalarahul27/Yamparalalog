@@ -57,25 +57,6 @@ export function AdminPanel({
     }
   };
 
-  const handleToggleAccess = async (userId: string, tab: string, currentTabs: string[] = []) => {
-    if (userId === "admin") return; // Admin always has access
-
-    setToggleLoading(userId);
-    const newTabs = currentTabs.includes(tab)
-      ? currentTabs.filter(t => t !== tab)
-      : [...currentTabs, tab];
-
-    // We need to update the user's accessibleTabs
-    // Check if onUpdateUserPin can be adapted or if we need a new prop
-    // For now, we'll assume we need to add a new prop to the component
-    // helping the user implement this in the parent component
-
-    // Since we don't have a direct "updateUser" prop in the interface yet,
-    // I will mock the UI update for now and we will update the parent and API next.
-
-    // WAIT: The plan says "Update users.ts API". 
-    // I should probably add an onUpdateUser prop to this component first.
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -176,11 +157,7 @@ export function AdminPanel({
                             checked={hasAccess}
                             disabled={isAdmin}
                             onChange={() => {
-                              // This will be connected via props in the next step
-                              // storing the intent in a data-* attribute for now if needed, 
-                              // or just rendering the UI structure first.
-                              const updateFn = (window as any).handleUserAccessUpdate;
-                              if (updateFn) updateFn(user.id, feature, !hasAccess);
+                              onUpdateUserAccess(user.id, feature, !hasAccess);
                             }}
                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50"
                           />

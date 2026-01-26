@@ -27,9 +27,10 @@ interface LoginScreenProps {
   users: User[];
   onLogin: (user: User) => void;
   loading?: boolean;
+  onClose?: () => void;
 }
 
-export function LoginScreen({ users, onLogin, loading = false }: LoginScreenProps) {
+export function LoginScreen({ users, onLogin, loading = false, onClose }: LoginScreenProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -80,6 +81,14 @@ export function LoginScreen({ users, onLogin, loading = false }: LoginScreenProp
           </div>
           <h1 className="text-3xl font-bold mb-2">Yamparala Dev App</h1>
           <p className="text-gray-600">Please log in to continue</p>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">

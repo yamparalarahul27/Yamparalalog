@@ -88,7 +88,8 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("all"); // Category filter
   const [sortBy, setSortBy] = useState("newest"); // Sort order (newest/oldest)
   const [viewMode, setViewMode] = useState<"card" | "timeline">("card"); // View mode
-  const [mainTab, setMainTab] = useState<"wiki" | "logs" | "resources">("logs"); // Top-level tab
+  const [mainTab, setMainTab] = useState<"wiki" | "logs" | "resources">("resources"); // Top-level tab
+  const [showLoginOverlay, setShowLoginOverlay] = useState(false); // Login screen overlay state
 
   // ===== EFFECTS =====
 
@@ -172,6 +173,12 @@ export default function App() {
       });
 
       setUsers(migratedUsers);
+
+      // Auto-login as Guest if no user is set
+      const guestUser = migratedUsers.find((u: User) => u.id === "guest");
+      if (guestUser && !currentUser) {
+        setCurrentUser(guestUser);
+      }
     } catch (error) {
       console.error("Error loading users:", error);
       toast.error("Failed to load users");
@@ -417,7 +424,7 @@ export default function App() {
       if (!targetUser) return;
 
       // Calculate new tabs
-      const currentTabs = targetUser.accessibleTabs || ["resources"]; // Default to Resources if undefined
+      const currentTabs = targetUser.accessibleTabs || [];
       let newTabs: string[];
 
       if (enabled) {
@@ -538,15 +545,7 @@ export default function App() {
     );
   };
 
-  if (!currentUser) {
-    return (
-      <LoginScreen
-        users={users}
-        onLogin={handleLogin}
-        loading={usersLoading}
-      />
-    );
-  }
+  // No longer returning LoginScreen early; it will be an overlay
 
   return (
     <div className="min-h-screen">
@@ -573,21 +572,25 @@ export default function App() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                onClick={handleOpenDialog}
-                className="gap-2"
-              >
-                <Plus className="h-5 w-5" />
-                Add Log
-              </Button>
-              <Button
-                onClick={() => setTrashOpen(true)}
-                variant="outline"
-                className="gap-2"
-              >
-                <Trash2 className="h-5 w-5" />
-                Trash ({getDeletedLogs().length})
-              </Button>
+              {currentUser?.id !== "guest" && (
+                <>
+                  <Button
+                    onClick={handleOpenDialog}
+                    className="gap-2"
+                  >
+                    <Plus className="h-5 w-5" />
+                    Add Log
+                  </Button>
+                  <Button
+                    onClick={() => setTrashOpen(true)}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                    Trash ({getDeletedLogs().length})
+                  </Button>
+                </>
+              )}
 
               {/* Support Developer Button - Rounded + ₹ + White Fill */}
               <Button
@@ -604,49 +607,61 @@ export default function App() {
                 ₹ Support Developer
               </Button>
 
-              {/* Options Grouping Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-200 bg-white rounded-full hover:bg-gray-50 transition-colors focus:outline-none cursor-pointer"
+              {/* Options Grouping Dropdown / Login Button */}
+              {currentUser?.id === "guest" ? (
+                <Button
+                  onClick={() => setShowLoginOverlay(true)}
+                  className="rounded-full gap-2"
                 >
-                  Options <ChevronDown className="h-4 w-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-white shadow-2xl z-[999] p-1 border border-gray-100">
-                  <DropdownMenuItem
-                    className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md"
-                    onClick={() => setSettingsOpen(true)}
+                  <Lock className="h-4 w-4" />
+                  Login as Admin
+                </Button>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-200 bg-white rounded-full hover:bg-gray-50 transition-colors focus:outline-none cursor-pointer"
                   >
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-
-                  {currentUser.id === "admin" && (
+                    Options <ChevronDown className="h-4 w-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-white shadow-2xl z-[999] p-1 border border-gray-100">
                     <DropdownMenuItem
                       className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md"
-                      onClick={() => setAdminPanelOpen(true)}
+                      onClick={() => setSettingsOpen(true)}
                     >
-                      <Users className="h-4 w-4" />
-                      <span>Admin Panel</span>
+                      <Settings className="h-4 w-4" />
+                      <span>Settings</span>
                     </DropdownMenuItem>
-                  )}
 
-                  <DropdownMenuSeparator className="my-1 bg-gray-100 h-px" />
+                    {currentUser.id === "admin" && (
+                      <DropdownMenuItem
+                        className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md"
+                        onClick={() => setAdminPanelOpen(true)}
+                      >
+                        <Users className="h-4 w-4" />
+                        <span>Admin Panel</span>
+                      </DropdownMenuItem>
+                    )}
 
-                  <DropdownMenuItem
-                    className="flex items-center gap-2 px-3 py-2 cursor-pointer text-red-600 hover:bg-red-50 rounded-md"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuSeparator className="my-1 bg-gray-100 h-px" />
+
+                    <DropdownMenuItem
+                      className="flex items-center gap-2 px-3 py-2 cursor-pointer text-red-600 hover:bg-red-50 rounded-md"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Stats */}
-        <DashboardStats logs={logs} currentUser={currentUser} />
+        {/* Stats - Hidden for Guest */}
+        {currentUser?.id !== "guest" && (
+          <DashboardStats logs={logs} currentUser={currentUser} />
+        )}
 
         {/* Main Tabs: Wiki and Logs */}
         <Tabs
@@ -854,6 +869,21 @@ export default function App() {
         payeeName="Yamparala Rahul"
         userName={currentUser?.name || "User"}
       />
+
+      {/* Login Overlay */}
+      {showLoginOverlay && (
+        <div className="fixed inset-0 z-[1000] bg-white/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <LoginScreen
+            users={users}
+            onLogin={(user: User) => {
+              handleLogin(user);
+              setShowLoginOverlay(false);
+            }}
+            loading={usersLoading}
+            onClose={() => setShowLoginOverlay(false)}
+          />
+        </div>
+      )}
 
       <Toaster />
       {/* Agentation Visual Feedback (Development Only) */}

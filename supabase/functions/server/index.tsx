@@ -54,12 +54,12 @@ const initializeUsers = async () => {
       role: "Guest",
       pin: "",
       requiresPin: false,
-      accessibleTabs: ["wiki"]
+      accessibleTabs: ["resources"]
     }
   ];
 
   // Users to explicitly remove (cleanup)
-  const legacyUsers = ["praveen", "shina", "newjoin"];
+  const legacyUsers = ["praveen", "shaina", "newjoin"];
 
   // Cleanup legacy users
   for (const userId of legacyUsers) {
