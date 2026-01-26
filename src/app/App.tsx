@@ -56,6 +56,7 @@ import {
   DropdownMenuSeparator,
 } from "@/app/components/ui/dropdown-menu";
 import { apiClient } from "@/services/api-client"; // Centralized API client
+import { Agentation } from "agentation"; // AI Feedback Tool
 
 export default function App() {
   // ===== STATE MANAGEMENT =====
@@ -794,6 +795,8 @@ export default function App() {
       />
 
       <Toaster />
+      {/* Agentation Visual Feedback (Development Only) */}
+      {process.env.NODE_ENV === "development" && <Agentation />}
     </div>
   );
 }
