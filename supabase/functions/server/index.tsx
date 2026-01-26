@@ -59,7 +59,7 @@ const initializeUsers = async () => {
   ];
 
   // Users to explicitly remove (cleanup)
-  const legacyUsers = ["praveen", "shina", "newjoin"];
+  const legacyUsers = ["praveen", "shaina", "newjoin"];
 
   // Cleanup legacy users
   for (const userId of legacyUsers) {
