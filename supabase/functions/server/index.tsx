@@ -49,30 +49,26 @@ const initializeUsers = async () => {
       accessibleTabs: ["wiki", "logs", "resources"]
     },
     {
-      id: "praveen",
-      name: "Praveen",
-      role: "UI Designer",
-      pin: "",
-      requiresPin: true,
-      accessibleTabs: ["wiki", "logs", "resources"]
-    },
-    {
-      id: "shaina",
-      name: "Shaina Mishra",
-      role: "Graphic Designer",
-      pin: "",
-      requiresPin: true,
-      accessibleTabs: ["wiki", "logs", "resources"]
-    },
-    {
-      id: "newjoin",
-      name: "New_Join",
+      id: "guest",
+      name: "Guest User",
       role: "Guest",
       pin: "",
       requiresPin: false,
       accessibleTabs: ["wiki"]
     }
   ];
+
+  // Users to explicitly remove (cleanup)
+  const legacyUsers = ["praveen", "shina", "newjoin"];
+
+  // Cleanup legacy users
+  for (const userId of legacyUsers) {
+    const existing = await kv.get(`user:${userId}`);
+    if (existing) {
+      console.log(`Removing legacy user: ${userId}`);
+      await kv.del(`user:${userId}`);
+    }
+  }
 
   // Check and add each user individually (preserves existing users)
   for (const user of defaultUsers) {

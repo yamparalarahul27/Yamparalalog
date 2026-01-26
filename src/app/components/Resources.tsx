@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/app/components/ui/button";
 import { AddResourceDialog } from "@/app/components/AddResourceDialog"; // Dialog for adding resources
-import { FileText, Link as LinkIcon, Plus, Trash2, Filter } from "lucide-react"; // Icons
+import { FileText, Link as LinkIcon, Plus, Trash2, Filter, ExternalLink } from "lucide-react"; // Icons
 import { User } from "@/app/components/types"; // TypeScript interface for User
 import { toast } from "sonner"; // Toast notifications
 import { apiClient, Resource } from "@/services/api-client"; // API client
@@ -205,9 +205,9 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
             href={resource.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
           >
-            Open Link
+            Open Link <ExternalLink className="h-3 w-3" />
           </a>
         </div>
         <div className="text-xs text-gray-500 mt-3">

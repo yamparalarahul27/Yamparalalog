@@ -5,7 +5,7 @@ const TabsContext = React.createContext<{
   onValueChange: (value: string) => void
 }>({
   value: "",
-  onValueChange: () => {},
+  onValueChange: () => { },
 })
 
 export function Tabs({
@@ -46,22 +46,26 @@ export function TabsTrigger({
   value,
   children,
   className = "",
+  disabled,
+  ...props
 }: {
   value: string
   children: React.ReactNode
   className?: string
-}) {
+  disabled?: boolean
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const context = React.useContext(TabsContext)
 
   return (
     <button
       type="button"
-      onClick={() => context.onValueChange(value)}
-      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
-        context.value === value
+      onClick={() => !disabled && context.onValueChange(value)}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${context.value === value
           ? "bg-white text-gray-950 shadow-sm"
           : "hover:bg-gray-200/50"
-      } ${className}`}
+        } ${className}`}
+      {...props}
     >
       {children}
     </button>

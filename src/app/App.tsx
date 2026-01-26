@@ -41,6 +41,7 @@ import {
   BookOpen,
   FolderOpen,
   ChevronDown,
+  Lock,
 } from "lucide-react"; // Icons
 import {
   Tabs,
@@ -403,6 +404,45 @@ export default function App() {
   };
 
   /**
+   * Handle update user access
+   * Admin function to toggle access to specific tabs/features
+   */
+  const handleUpdateUserAccess = async (
+    userId: string,
+    tab: string,
+    enabled: boolean
+  ) => {
+    try {
+      const targetUser = users.find((u) => u.id === userId);
+      if (!targetUser) return;
+
+      // Calculate new tabs
+      const currentTabs = targetUser.accessibleTabs || ["resources"]; // Default to Resources if undefined
+      let newTabs: string[];
+
+      if (enabled) {
+        newTabs = [...new Set([...currentTabs, tab])];
+      } else {
+        newTabs = currentTabs.filter((t) => t !== tab);
+      }
+
+      await apiClient.users.updateAccess(userId, newTabs);
+
+      // Update local state directly
+      setUsers(
+        users.map((u) =>
+          u.id === userId ? { ...u, accessibleTabs: newTabs } : u
+        )
+      );
+
+      toast.success(`User access updated`);
+    } catch (error) {
+      console.error("Error updating user access:", error);
+      toast.error("Failed to update user access");
+    }
+  };
+
+  /**
    * Handle delete user
    * Admin function to delete a user
    */
@@ -603,9 +643,6 @@ export default function App() {
               </DropdownMenu>
             </div>
           </div>
-          <p className="text-gray-600">
-            Track your design work, research, and progress
-          </p>
         </div>
 
         {/* Stats */}
@@ -620,24 +657,47 @@ export default function App() {
           className="mb-6"
         >
           <TabsList>
-            {(!currentUser.accessibleTabs || currentUser.accessibleTabs.includes("wiki")) && (
-              <TabsTrigger value="wiki" className="gap-2">
+            {/* Wiki Tab */}
+            <TabsTrigger
+              value="wiki"
+              className="gap-2"
+              disabled={currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("wiki")}
+            >
+              {currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("wiki") ? (
+                <Lock className="h-4 w-4 text-gray-400" />
+              ) : (
                 <BookOpen className="h-4 w-4" />
-                WIKI
-              </TabsTrigger>
-            )}
-            {(!currentUser.accessibleTabs || currentUser.accessibleTabs.includes("logs")) && (
-              <TabsTrigger value="logs" className="gap-2">
+              )}
+              WIKI
+            </TabsTrigger>
+
+            {/* Logs Tab */}
+            <TabsTrigger
+              value="logs"
+              className="gap-2"
+              disabled={currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("logs")}
+            >
+              {currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("logs") ? (
+                <Lock className="h-4 w-4 text-gray-400" />
+              ) : (
                 <FileText className="h-4 w-4" />
-                LOGS
-              </TabsTrigger>
-            )}
-            {(!currentUser.accessibleTabs || currentUser.accessibleTabs.includes("resources")) && (
-              <TabsTrigger value="resources" className="gap-2">
+              )}
+              LOGS
+            </TabsTrigger>
+
+            {/* Resources Tab */}
+            <TabsTrigger
+              value="resources"
+              className="gap-2"
+              disabled={currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("resources")}
+            >
+              {currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("resources") ? (
+                <Lock className="h-4 w-4 text-gray-400" />
+              ) : (
                 <FolderOpen className="h-4 w-4" />
-                RESOURCES
-              </TabsTrigger>
-            )}
+              )}
+              RESOURCES
+            </TabsTrigger>
           </TabsList>
 
           {/* Wiki Tab Content */}
@@ -777,6 +837,7 @@ export default function App() {
         onUpdateUserPin={handleUpdateUserPin}
         onAddUser={handleAddUser}
         onDeleteUser={handleDeleteUser}
+        onUpdateUserAccess={handleUpdateUserAccess}
       />
       <TrashDialog
         open={trashOpen}

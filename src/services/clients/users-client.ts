@@ -59,4 +59,14 @@ export class UsersClient extends BaseClient {
             `${API_ENDPOINTS.USERS}/${userId}`
         );
     }
+    /**
+     * Update user access tabs
+     */
+    async updateAccess(userId: string, accessibleTabs: string[]): Promise<User> {
+        const data = await this.put<{ user: User }>(
+            `${API_ENDPOINTS.USERS}/${userId}/access`,
+            { accessibleTabs }
+        );
+        return data.user;
+    }
 }

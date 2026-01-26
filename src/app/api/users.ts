@@ -65,3 +65,14 @@ export async function deleteUser(userId: string): Promise<void> {
     method: "DELETE",
   });
 }
+
+export async function updateUserAccess(
+  userId: string,
+  accessibleTabs: string[]
+): Promise<User> {
+  const data = await fetchAPI(`/users/${userId}/access`, {
+    method: "PUT",
+    body: JSON.stringify({ accessibleTabs }),
+  });
+  return data.user;
+}

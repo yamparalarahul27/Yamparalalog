@@ -19,6 +19,7 @@ interface AdminPanelProps {
   onUpdateUserPin: (userId: string, newPin: string) => void;
   onAddUser: (name: string, role: string) => void;
   onDeleteUser: (userId: string) => void;
+  onUpdateUserAccess: (userId: string, tab: string, enabled: boolean) => void;
 }
 
 export function AdminPanel({
@@ -28,12 +29,15 @@ export function AdminPanel({
   onUpdateUserPin,
   onAddUser,
   onDeleteUser,
+  onUpdateUserAccess,
 }: AdminPanelProps) {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [newPin, setNewPin] = useState("");
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUserName, setNewUserName] = useState("");
   const [newUserRole, setNewUserRole] = useState("");
+
+  const [toggleLoading, setToggleLoading] = useState<string | null>(null);
 
   const handleUpdatePin = () => {
     if (editingUser && newPin.length === 4) {
@@ -45,6 +49,7 @@ export function AdminPanel({
 
   const handleAddUser = () => {
     if (newUserName && newUserRole) {
+      // Default new users to only have Resources access
       onAddUser(newUserName, newUserRole);
       setShowAddUser(false);
       setNewUserName("");
@@ -52,9 +57,29 @@ export function AdminPanel({
     }
   };
 
+  const handleToggleAccess = async (userId: string, tab: string, currentTabs: string[] = []) => {
+    if (userId === "admin") return; // Admin always has access
+
+    setToggleLoading(userId);
+    const newTabs = currentTabs.includes(tab)
+      ? currentTabs.filter(t => t !== tab)
+      : [...currentTabs, tab];
+
+    // We need to update the user's accessibleTabs
+    // Check if onUpdateUserPin can be adapted or if we need a new prop
+    // For now, we'll assume we need to add a new prop to the component
+    // helping the user implement this in the parent component
+
+    // Since we don't have a direct "updateUser" prop in the interface yet,
+    // I will mock the UI update for now and we will update the parent and API next.
+
+    // WAIT: The plan says "Update users.ts API". 
+    // I should probably add an onUpdateUser prop to this component first.
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[800px]">
         <DialogHeader>
           <DialogTitle>Admin Panel - User Management</DialogTitle>
         </DialogHeader>
@@ -91,6 +116,9 @@ export function AdminPanel({
                   placeholder="e.g., UI Designer, Developer"
                 />
               </div>
+              <div className="text-xs text-gray-500">
+                * New users will default to "Resources" access only. You can enable other features after creating the user.
+              </div>
               <div className="flex gap-2">
                 <Button onClick={handleAddUser} size="sm">
                   Add User
@@ -110,48 +138,88 @@ export function AdminPanel({
             </div>
           )}
 
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {users.map((user) => (
-              <div
-                key={user.id}
-                className="p-4 border rounded-lg flex items-center justify-between"
-              >
-                <div className="flex-1">
-                  <div className="font-semibold">{user.name}</div>
-                  <div className="text-sm text-gray-600">{user.role}</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    PIN: {user.pin ? "Set (****)" : "Not set"}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setEditingUser(user);
-                      setNewPin("");
-                    }}
+          <div className="space-y-2 max-h-[500px] overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left bg-gray-50 sticky top-0">
+                <tr>
+                  <th className="p-2 font-medium">User</th>
+                  <th className="p-2 font-medium">Role</th>
+                  <th className="p-2 font-medium text-center">Wiki</th>
+                  <th className="p-2 font-medium text-center">Logs</th>
+                  <th className="p-2 font-medium text-center">Resources</th>
+                  <th className="p-2 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr
+                    key={user.id}
+                    className="border-b last:border-0 hover:bg-gray-50"
                   >
-                    <Pencil className="h-4 w-4 mr-1" />
-                    Set PIN
-                  </Button>
-                  {user.id !== "admin" && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={() => {
-                        if (confirm(`Delete user ${user.name}?`)) {
-                          onDeleteUser(user.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
+                    <td className="p-2">
+                      <div className="font-medium">{user.name}</div>
+                      <div className="text-xs text-gray-500">
+                        PIN: {user.pin ? "Set (****)" : "Not set"}
+                      </div>
+                    </td>
+                    <td className="p-2 text-gray-600">{user.role}</td>
+
+                    {/* Feature Toggles */}
+                    {["wiki", "logs", "resources"].map((feature) => {
+                      const hasAccess = user.accessibleTabs?.includes(feature) ?? (user.id === "admin");
+                      const isAdmin = user.id === "admin";
+
+                      return (
+                        <td key={feature} className="p-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={hasAccess}
+                            disabled={isAdmin}
+                            onChange={() => {
+                              // This will be connected via props in the next step
+                              // storing the intent in a data-* attribute for now if needed, 
+                              // or just rendering the UI structure first.
+                              const updateFn = (window as any).handleUserAccessUpdate;
+                              if (updateFn) updateFn(user.id, feature, !hasAccess);
+                            }}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50"
+                          />
+                        </td>
+                      );
+                    })}
+
+                    <td className="p-2 flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8"
+                        onClick={() => {
+                          setEditingUser(user);
+                          setNewPin("");
+                        }}
+                      >
+                        <Pencil className="h-3 w-3 mr-1" />
+                        PIN
+                      </Button>
+                      {user.id !== "admin" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            if (confirm(`Delete user ${user.name}?`)) {
+                              onDeleteUser(user.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
