@@ -4,12 +4,7 @@ import { AddResourceDialog } from "@/app/components/AddResourceDialog"; // Dialo
 import { FileText, Link as LinkIcon, Plus, Trash2, Filter } from "lucide-react"; // Icons
 import { User } from "@/app/components/types"; // TypeScript interface for User
 import { toast } from "sonner"; // Toast notifications
-import {
-  fetchResources,
-  createResource,
-  deleteResource,
-  Resource,
-} from "@/app/api/resources"; // API functions - connects to backend
+import { apiClient, Resource } from "@/services/api-client"; // API client
 import {
   Select,
   SelectContent,
@@ -46,7 +41,7 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
   const loadResources = async () => {
     try {
       setLoading(true);
-      const fetchedResources = await fetchResources();
+      const fetchedResources = await apiClient.resources.getAll();
       setResources(fetchedResources);
     } catch (error) {
       console.error("Error loading resources:", error);
@@ -62,7 +57,7 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
    */
   const handleSaveResource = async (resourceData: Omit<Resource, "id">) => {
     try {
-      const newResource = await createResource({
+      const newResource = await apiClient.resources.create({
         ...resourceData,
         addedBy: currentUser.name,
         addedById: currentUser.id,
@@ -82,7 +77,7 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
    */
   const handleDeleteResource = async (id: string) => {
     try {
-      await deleteResource(id);
+      await apiClient.resources.delete(id);
       setResources(resources.filter((r) => r.id !== id));
       toast.success("Resource deleted successfully");
     } catch (error) {

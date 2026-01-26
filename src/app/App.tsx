@@ -55,22 +55,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/app/components/ui/dropdown-menu";
-import {
-  fetchLogs,
-  createLog,
-  updateLog,
-  deleteLog,
-  uploadImage,
-  addComment,
-  restoreLog,
-  permanentDeleteLog,
-} from "@/app/api/logs"; // API functions for logs - connects to backend
-import {
-  fetchUsers,
-  updateUserPin,
-  createUser,
-  deleteUser,
-} from "@/app/api/users"; // API functions for users - connects to backend
+import { apiClient } from "@/services/api-client"; // Centralized API client
 
 export default function App() {
   // ===== STATE MANAGEMENT =====
@@ -170,7 +155,7 @@ export default function App() {
    */
   const loadUsers = async () => {
     try {
-      const fetchedUsers = await fetchUsers();
+      const fetchedUsers = await apiClient.users.getAll();
 
       // Migration: Rename Admin role to Yamparala Rahul for better branding
       const migratedUsers = fetchedUsers.map((user) => {
@@ -204,7 +189,7 @@ export default function App() {
   const loadLogs = async () => {
     try {
       setLoading(true);
-      const fetchedLogs = await fetchLogs();
+      const fetchedLogs = await apiClient.logs.getAll();
 
       // Filter logs based on user role
       let filteredLogs = fetchedLogs;
@@ -242,7 +227,7 @@ export default function App() {
     // If user is setting PIN for first time (has no PIN), update it
     if (!user.pin) {
       try {
-        await updateUserPin(user.id, user.pin || "");
+        await apiClient.users.updatePin(user.id, user.pin || "");
         // Optimization: Update local users state directly instead of full re-fetch
         setUsers(users.map(u => u.id === user.id ? { ...u, pin: user.pin } : u));
       } catch (error) {
@@ -284,7 +269,7 @@ export default function App() {
       // Upload image if provided
       // Connects to: /src/app/api/logs.ts → uploadImage() → Supabase Storage
       if (imageFile) {
-        imageUrl = await uploadImage(imageFile);
+        imageUrl = await apiClient.logs.uploadImage(imageFile);
       }
 
       const logWithImage = {
@@ -295,7 +280,7 @@ export default function App() {
 
       if ("id" in logData) {
         // Update existing log
-        const updatedLog = await updateLog(
+        const updatedLog = await apiClient.logs.update(
           logWithImage as DesignLog,
         );
         setAllLogs(
@@ -307,7 +292,7 @@ export default function App() {
         setEditingLog(null);
       } else {
         // Add new log
-        const newLog = await createLog(logWithImage);
+        const newLog = await apiClient.logs.create(logWithImage);
         setAllLogs([newLog, ...allLogs]);
         toast.success("Design log added successfully");
       }
@@ -348,7 +333,7 @@ export default function App() {
       toast.success("Design log moved to trash");
 
       // API call happens in the background
-      await deleteLog(id);
+      await apiClient.logs.delete(id);
     } catch (error) {
       console.error("Error deleting log:", error);
       toast.error("Failed to delete design log");
@@ -372,7 +357,7 @@ export default function App() {
    */
   const handleUpdatePin = async (newPin: string) => {
     try {
-      await updateUserPin(currentUser!.id, newPin);
+      await apiClient.users.updatePin(currentUser!.id, newPin);
       const updatedUser = { ...currentUser!, pin: newPin };
       setCurrentUser(updatedUser);
       await loadUsers();
@@ -392,7 +377,7 @@ export default function App() {
     newPin: string,
   ) => {
     try {
-      await updateUserPin(userId, newPin);
+      await apiClient.users.updatePin(userId, newPin);
       await loadUsers();
       toast.success("User PIN updated successfully");
     } catch (error) {
@@ -407,7 +392,7 @@ export default function App() {
    */
   const handleAddUser = async (name: string, role: string) => {
     try {
-      await createUser(name, role);
+      await apiClient.users.create({ name, role });
       await loadUsers();
       toast.success("User added successfully");
     } catch (error) {
@@ -422,7 +407,7 @@ export default function App() {
    */
   const handleDeleteUser = async (userId: string) => {
     try {
-      await deleteUser(userId);
+      await apiClient.users.delete(userId);
       await loadUsers();
       toast.success("User deleted successfully");
     } catch (error) {
@@ -440,7 +425,7 @@ export default function App() {
     commentText: string,
   ) => {
     try {
-      const updatedLog = await addComment(logId, {
+      const updatedLog = await apiClient.logs.addComment(logId, {
         text: commentText,
         author: currentUser!.name,
         authorId: currentUser!.id,
@@ -463,7 +448,7 @@ export default function App() {
    */
   const handleRestoreLog = async (id: string) => {
     try {
-      const restoredLog = await restoreLog(id);
+      const restoredLog = await apiClient.logs.restore(id);
       setAllLogs(
         allLogs.map((log) =>
           log.id === restoredLog.id ? restoredLog : log,
@@ -482,7 +467,7 @@ export default function App() {
    */
   const handlePermanentDeleteLog = async (id: string) => {
     try {
-      await permanentDeleteLog(id);
+      await apiClient.logs.permanentDelete(id);
       setAllLogs(allLogs.filter((log) => log.id !== id));
       toast.success(
         "Design log permanently deleted successfully",

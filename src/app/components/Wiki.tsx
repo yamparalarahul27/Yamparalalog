@@ -5,14 +5,7 @@ import { Input } from "@/app/components/ui/input";
 import { Textarea } from "@/app/components/ui/textarea";
 import { BookOpen, Plus, Edit2, Trash2, Search, Upload, X, Image as ImageIcon, MessageSquare, Send, Video, Tag } from "lucide-react"; // Added Tag icon
 import { toast } from "sonner";
-import {
-  fetchWikiPages,
-  createWikiPage,
-  updateWikiPage,
-  deleteWikiPage,
-  WikiPage,
-  WikiComment,
-} from "@/app/api/wiki";
+import { apiClient, WikiPage, WikiComment } from "@/services/api-client";
 import { User } from "@/app/components/types";
 import {
   Select,
@@ -52,7 +45,7 @@ export function Wiki({ currentUser }: WikiProps) {
   const loadPages = async () => {
     try {
       setLoading(true);
-      const loadedPages = await fetchWikiPages();
+      const loadedPages = await apiClient.wiki.getPages();
       setPages(loadedPages);
     } catch (error) {
       console.error("Error loading wiki pages:", error);
@@ -64,7 +57,7 @@ export function Wiki({ currentUser }: WikiProps) {
 
   const handleCreatePage = async () => {
     try {
-      const newPage = await createWikiPage({
+      const newPage = await apiClient.wiki.createPage({
         title: "New Page",
         content: "Start writing your wiki content here...",
         category: "",
@@ -95,7 +88,7 @@ export function Wiki({ currentUser }: WikiProps) {
     if (!selectedPage) return;
 
     try {
-      const updatedPage = await updateWikiPage(selectedPage.id, {
+      const updatedPage = await apiClient.wiki.updatePage(selectedPage.id, {
         title: editTitle,
         content: editContent,
         category: editCategory,
@@ -117,7 +110,7 @@ export function Wiki({ currentUser }: WikiProps) {
 
   const handleDeletePage = async (id: string) => {
     try {
-      await deleteWikiPage(id);
+      await apiClient.wiki.deletePage(id);
       setPages(pages.filter(p => p.id !== id));
       if (selectedPage?.id === id) {
         setSelectedPage(null);
@@ -209,7 +202,7 @@ export function Wiki({ currentUser }: WikiProps) {
       };
 
       const updatedComments = [...(selectedPage.comments || []), newComment];
-      const updatedPage = await updateWikiPage(selectedPage.id, {
+      const updatedPage = await apiClient.wiki.updatePage(selectedPage.id, {
         comments: updatedComments,
       });
 
@@ -285,8 +278,8 @@ export function Wiki({ currentUser }: WikiProps) {
                   {page.tag && (
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${page.tag === 'Design Team'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-green-100 text-green-700'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-green-100 text-green-700'
                         }`}
                     >
                       {page.tag}
@@ -489,8 +482,8 @@ export function Wiki({ currentUser }: WikiProps) {
                   {selectedPage.tag && (
                     <span
                       className={`text-xs px-3 py-1 rounded-full flex items-center gap-1.5 ${selectedPage.tag === 'Design Team'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-green-100 text-green-700'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-green-100 text-green-700'
                         }`}
                     >
                       <Tag className="h-3 w-3" />
