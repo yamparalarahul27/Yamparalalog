@@ -128,6 +128,7 @@ export function AdminPanel({
                   <th className="p-2 font-medium text-center">Wiki</th>
                   <th className="p-2 font-medium text-center">Logs</th>
                   <th className="p-2 font-medium text-center">Resources</th>
+                  <th className="p-2 font-medium text-center">Users</th>
                   <th className="p-2 font-medium text-right">Actions</th>
                 </tr>
               </thead>
@@ -146,7 +147,7 @@ export function AdminPanel({
                     <td className="p-2 text-gray-600">{user.role}</td>
 
                     {/* Feature Toggles */}
-                    {["wiki", "logs", "resources"].map((feature) => {
+                    {["wiki", "logs", "resources", "users"].map((feature) => {
                       const hasAccess = user.accessibleTabs?.includes(feature) ?? (user.id === "admin");
                       const isAdmin = user.id === "admin";
 

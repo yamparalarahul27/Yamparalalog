@@ -215,7 +215,10 @@ export default function App() {
           new Date(b.date).getTime() -
           new Date(a.date).getTime(),
       );
-      setAllLogs(sortedLogs);
+      setAllLogs(sortedLogs.map((log: DesignLog) => ({
+        ...log,
+        imageUrl: log.imageUrl // Ensure type consistency
+      })));
       setLogs(sortedLogs);
     } catch (error) {
       console.error("Error loading logs:", error);
@@ -632,7 +635,7 @@ export default function App() {
                       <span>Settings</span>
                     </DropdownMenuItem>
 
-                    {currentUser.id === "admin" && (
+                    {(currentUser.id === "admin" || currentUser.accessibleTabs?.includes("users")) && (
                       <DropdownMenuItem
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md"
                         onClick={() => setAdminPanelOpen(true)}
@@ -722,8 +725,8 @@ export default function App() {
 
           {/* Logs Tab Content */}
           <TabsContent value="logs" className="mt-6">
-            {/* User Tabs (Admin Only) */}
-            {currentUser.id === "admin" && users.length > 0 && (
+            {/* User Tabs (Enabled if user has 'users' permission or is admin) */}
+            {(currentUser.id === "admin" || currentUser.accessibleTabs?.includes("users")) && users.length > 0 && (
               <div className="mb-6">
                 <Tabs
                   value={selectedTab}
@@ -769,58 +772,60 @@ export default function App() {
       </div>
 
       {/* Logs Display - full width for timeline, contained for card view */}
-      {mainTab === "logs" && (
-        <div className={viewMode === "timeline" ? "w-full" : "max-w-7xl mx-auto px-4"}>
-          {loading ? (
-            <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-              <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">
-                Loading design logs
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Please wait while we load your logs
-              </p>
-            </div>
-          ) : logs.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-              <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">
-                No design logs yet
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Start tracking your design work by adding your
-                first log
-              </p>
-              <Button
-                onClick={handleOpenDialog}
-                className="gap-2"
-              >
-                <Plus className="h-5 w-5" />
-                Add Your First Log
-              </Button>
-            </div>
-          ) : viewMode === "card" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {logs.map((log) => (
-                <DesignLogCard
-                  key={log.id}
-                  log={log}
-                  onEdit={handleEditLog}
-                  onDelete={handleDeleteLog}
-                  currentUser={currentUser}
-                  onAddComment={handleAddComment}
-                  allLogs={allLogs}
-                />
-              ))}
-            </div>
-          ) : (
-            <TimelineView
-              logs={logs}
-              onSelectLog={handleViewLog}
-            />
-          )}
-        </div>
-      )}
+      {
+        mainTab === "logs" && (
+          <div className={viewMode === "timeline" ? "w-full" : "max-w-7xl mx-auto px-4"}>
+            {loading ? (
+              <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+                <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  Loading design logs
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Please wait while we load your logs
+                </p>
+              </div>
+            ) : logs.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+                <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  No design logs yet
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Start tracking your design work by adding your
+                  first log
+                </p>
+                <Button
+                  onClick={handleOpenDialog}
+                  className="gap-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add Your First Log
+                </Button>
+              </div>
+            ) : viewMode === "card" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {logs.map((log) => (
+                  <DesignLogCard
+                    key={log.id}
+                    log={log}
+                    onEdit={handleEditLog}
+                    onDelete={handleDeleteLog}
+                    currentUser={currentUser}
+                    onAddComment={handleAddComment}
+                    allLogs={allLogs}
+                  />
+                ))}
+              </div>
+            ) : (
+              <TimelineView
+                logs={logs}
+                onSelectLog={handleViewLog}
+              />
+            )}
+          </div>
+        )
+      }
 
       <AddLogDialog
         open={dialogOpen}
@@ -871,23 +876,25 @@ export default function App() {
       />
 
       {/* Login Overlay */}
-      {showLoginOverlay && (
-        <div className="fixed inset-0 z-[1000] bg-white/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <LoginScreen
-            users={users}
-            onLogin={(user: User) => {
-              handleLogin(user);
-              setShowLoginOverlay(false);
-            }}
-            loading={usersLoading}
-            onClose={() => setShowLoginOverlay(false)}
-          />
-        </div>
-      )}
+      {
+        showLoginOverlay && (
+          <div className="fixed inset-0 z-[1000] bg-white/80 backdrop-blur-sm animate-in fade-in duration-300">
+            <LoginScreen
+              users={users}
+              onLogin={(user: User) => {
+                handleLogin(user);
+                setShowLoginOverlay(false);
+              }}
+              loading={usersLoading}
+              onClose={() => setShowLoginOverlay(false)}
+            />
+          </div>
+        )
+      }
 
       <Toaster />
       {/* Agentation Visual Feedback (Development Only) */}
       {process.env.NODE_ENV === "development" && <Agentation />}
-    </div>
+    </div >
   );
 }
