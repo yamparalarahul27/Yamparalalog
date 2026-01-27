@@ -4,10 +4,11 @@ test.describe('Header & UI Verification', () => {
     test.beforeEach(async ({ page }) => {
         // Standard Login as Admin for Header tests
         await page.goto('/');
-        await page.getByText('Yamparala Rahul').click();
+        await page.getByRole('button', { name: 'Login', exact: true }).click();
+        await page.getByRole('button').filter({ hasText: 'Yamparala Rahul' }).click();
         await page.locator('input[type="password"]').fill('1234');
         await page.getByRole('button', { name: 'Log In' }).click();
-        await expect(page.getByText('Logged in as:')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText('Welcome')).toBeVisible({ timeout: 15000 });
     });
 
     test('Support Developer button styling and dialog', async ({ page }) => {
@@ -34,12 +35,12 @@ test.describe('Header & UI Verification', () => {
         await page.keyboard.press('Escape');
     });
 
-    test('Options dropdown menu content and stability', async ({ page }) => {
-        const optionsBtn = page.getByRole('button', { name: /Options/i });
-        await expect(optionsBtn).toBeVisible();
+    test('Login dropdown menu content and stability', async ({ page }) => {
+        const loginTrigger = page.getByRole('button', { name: 'Login', exact: false }).filter({ has: page.locator('svg.lucide-chevron-down') });
+        await expect(loginTrigger).toBeVisible();
 
         // Click to open
-        await optionsBtn.click();
+        await loginTrigger.click();
 
         // Verify Menu Items
         await expect(page.getByRole('menuitem', { name: 'Settings' })).toBeVisible();
@@ -51,31 +52,15 @@ test.describe('Header & UI Verification', () => {
         await expect(page.getByText('Change PIN')).toBeVisible();
     });
 
-    test('Navbar tab switching and active state', async ({ page }) => {
-        const logsTab = page.getByRole('button', { name: 'LOGS' });
-        const wikiTab = page.getByRole('button', { name: 'WIKI' });
-        const resourcesTab = page.getByRole('button', { name: 'RESOURCES' });
-
-        // Wiki switch
-        await wikiTab.click();
-        await expect(page.getByText('Wiki Pages')).toBeVisible();
-
-        // Resources switch
-        await resourcesTab.click();
-        await expect(page.locator('h2', { hasText: 'Resources' })).toBeVisible();
-
-        // Back to Logs
-        await logsTab.click();
-        await expect(page.getByText('Track your design work, research, and progress')).toBeVisible();
-    });
+    // Navbar tab switching tests removed as TabsList is gone
 
     test('Responsive Header UI (Mobile View)', async ({ page }) => {
         // Set viewport to a small mobile size
         await page.setViewportSize({ width: 375, height: 667 });
 
         // In mobile, Support button might be hidden or icon-only
-        const optionsBtn = page.getByRole('button', { name: /Options/i });
-        await expect(optionsBtn).toBeVisible();
+        const loginBtn = page.getByRole('button', { name: 'Login' });
+        await expect(loginBtn).toBeVisible();
 
         // Logo should be visible
         await expect(page.locator('img[alt="App Logo"]')).toBeVisible();

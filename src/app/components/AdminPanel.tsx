@@ -160,7 +160,7 @@ export function AdminPanel({
                                 onUpdateUserAccess(user.id, feature, !hasAccess);
                               }
                             }}
-                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50"
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50 cursor-pointer"
                           />
                         </td>
                       );

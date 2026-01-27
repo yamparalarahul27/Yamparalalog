@@ -427,7 +427,7 @@ export default function App() {
       if (!targetUser) return;
 
       // Calculate new tabs
-      // Use empty array if undefined (don't assume default - let backend handle defaults for new users)
+      // Default to what the user currently has, or empty if none (let backend/initialization handle defaults)
       const currentTabs = targetUser.accessibleTabs || [];
       let newTabs: string[];
 
@@ -567,35 +567,11 @@ export default function App() {
                   Yamparala Dev App
                 </h1>
                 <p className="text-sm text-gray-600">
-                  Logged in as:{" "}
-                  <span className="font-semibold">
-                    {currentUser.name}
-                  </span>{" "}
-                  ({currentUser.role})
+                  Welcome
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {currentUser?.id !== "guest" && (
-                <>
-                  <Button
-                    onClick={handleOpenDialog}
-                    className="gap-2"
-                  >
-                    <Plus className="h-5 w-5" />
-                    Add Log
-                  </Button>
-                  <Button
-                    onClick={() => setTrashOpen(true)}
-                    variant="outline"
-                    className="gap-2"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                    Trash ({getDeletedLogs().length})
-                  </Button>
-                </>
-              )}
-
               {/* Support Developer Button - Rounded + ₹ + White Fill */}
               <Button
                 variant="outline"
@@ -618,14 +594,14 @@ export default function App() {
                   className="rounded-full gap-2"
                 >
                   <Lock className="h-4 w-4" />
-                  Login as Admin
+                  Login
                 </Button>
               ) : (
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-200 bg-white rounded-full hover:bg-gray-50 transition-colors focus:outline-none cursor-pointer"
                   >
-                    Options <ChevronDown className="h-4 w-4" />
+                    Login <ChevronDown className="h-4 w-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 bg-white shadow-2xl z-[999] p-1 border border-gray-100">
                     <DropdownMenuItem
@@ -636,7 +612,7 @@ export default function App() {
                       <span>Settings</span>
                     </DropdownMenuItem>
 
-                    {(currentUser.id === "admin" || currentUser.accessibleTabs?.includes("users")) && (
+                    {(currentUser?.id === "admin" || currentUser?.accessibleTabs?.includes("users")) && (
                       <DropdownMenuItem
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md"
                         onClick={() => setAdminPanelOpen(true)}
@@ -662,8 +638,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* Stats - Hidden for Guest */}
-        {currentUser?.id !== "guest" && (
+        {/* Stats - Hidden for Guest or when loading */}
+        {currentUser && currentUser.id !== "guest" && (
           <DashboardStats logs={logs} currentUser={currentUser} />
         )}
 
@@ -675,70 +651,27 @@ export default function App() {
           }
           className="mb-6"
         >
-          <TabsList>
-            {/* Wiki Tab */}
-            <TabsTrigger
-              value="wiki"
-              className="gap-2"
-              disabled={currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("wiki")}
-            >
-              {currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("wiki") ? (
-                <Lock className="h-4 w-4 text-gray-400" />
-              ) : (
-                <BookOpen className="h-4 w-4" />
-              )}
-              WIKI
-            </TabsTrigger>
-
-            {/* Logs Tab */}
-            <TabsTrigger
-              value="logs"
-              className="gap-2"
-              disabled={currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("logs")}
-            >
-              {currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("logs") ? (
-                <Lock className="h-4 w-4 text-gray-400" />
-              ) : (
-                <FileText className="h-4 w-4" />
-              )}
-              LOGS
-            </TabsTrigger>
-
-            {/* Resources Tab */}
-            <TabsTrigger
-              value="resources"
-              className="gap-2"
-              disabled={currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("resources")}
-            >
-              {currentUser.id !== "admin" && !currentUser.accessibleTabs?.includes("resources") ? (
-                <Lock className="h-4 w-4 text-gray-400" />
-              ) : (
-                <FolderOpen className="h-4 w-4" />
-              )}
-              RESOURCES
-            </TabsTrigger>
-          </TabsList>
 
           {/* Wiki Tab Content */}
           <TabsContent value="wiki" className="mt-6">
-            <Wiki currentUser={currentUser} />
+            {currentUser && <Wiki currentUser={currentUser} />}
           </TabsContent>
 
           {/* Logs Tab Content */}
           <TabsContent value="logs" className="mt-6">
             {/* User Tabs (Enabled if user has 'users' permission or is admin) */}
-            {(currentUser.id === "admin" || currentUser.accessibleTabs?.includes("users")) && users.length > 0 && (
+            {(currentUser?.id === "admin" || currentUser?.accessibleTabs?.includes("users")) && users.length > 0 && (
               <div className="mb-6">
                 <Tabs
                   value={selectedTab}
                   onValueChange={setSelectedTab}
                 >
                   <TabsList className="w-full justify-start">
-                    <TabsTrigger value={currentUser.id}>
+                    <TabsTrigger value={currentUser?.id || ""}>
                       Me
                     </TabsTrigger>
                     {users
-                      .filter((user) => user.id !== currentUser.id && user.id !== "newjoin")
+                      .filter((user) => user.id !== currentUser?.id && user.id !== "newjoin")
                       .map((user) => (
                         <TabsTrigger key={user.id} value={user.id}>
                           {user.name}
@@ -835,7 +768,7 @@ export default function App() {
         editingLog={editingLog}
         availableLogs={allLogs.filter(
           (log) =>
-            !log.deleted && log.userId === currentUser.id,
+            !log.deleted && log.userId === currentUser?.id,
         )}
       />
       <ViewLogDialog
@@ -844,13 +777,17 @@ export default function App() {
         log={viewingLog}
         allLogs={allLogs}
       />
-      <UserSettings
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        currentUser={currentUser!}
-        onUpdatePin={handleUpdatePin}
-        onOpenSupport={() => setUpiOpen(true)}
-      />
+      {
+        currentUser && (
+          <UserSettings
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
+            currentUser={currentUser}
+            onUpdatePin={handleUpdatePin}
+            onOpenSupport={() => setUpiOpen(true)}
+          />
+        )
+      }
       <AdminPanel
         open={adminPanelOpen}
         onOpenChange={setAdminPanelOpen}

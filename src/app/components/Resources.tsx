@@ -260,47 +260,44 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
             Shared links, files, and helpful resources
           </p>
         </div>
-        <Button className="gap-2" onClick={handleOpenDialog}>
-          <Plus className="h-4 w-4" />
-          Add Resource
-        </Button>
+
+        {/* Filters moved to header */}
+        <div className="flex items-center space-x-2">
+          <Select
+            value={selectedCategory}
+            onValueChange={(value) => setSelectedCategory(value)}
+          >
+            <SelectTrigger className="w-32 h-9">
+              <SelectValue placeholder="Category">Category</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedUser}
+            onValueChange={(value) => setSelectedUser(value)}
+          >
+            <SelectTrigger className="w-32 h-9">
+              <SelectValue placeholder="User">User</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {allUsers.map((user) => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center space-x-4 mb-4">
-        <Select
-          value={selectedCategory}
-          onValueChange={(value) => setSelectedCategory(value)}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Category">Category</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            {categories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={selectedUser}
-          onValueChange={(value) => setSelectedUser(value)}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="User">User</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            {allUsers.map((user) => (
-              <SelectItem key={user.id} value={user.id}>
-                {user.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
 
       {/* Resources Display */}
       {resources.length === 0 ? (
@@ -311,13 +308,6 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
             className="w-32 h-32 object-contain mx-auto mb-4 hover:scale-105 transition-transform duration-300"
           />
           <h3 className="text-lg font-semibold mb-2">No resources yet</h3>
-          <p className="text-gray-600 mb-4">
-            Start adding useful links and resources for your team
-          </p>
-          <Button className="gap-2" onClick={handleOpenDialog}>
-            <Plus className="h-5 w-5" />
-            Add Your First Resource
-          </Button>
         </div>
       ) : (
         <>
@@ -327,7 +317,7 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
               <div className="flex items-center gap-2">
                 <div className="h-px flex-1 bg-gradient-to-r from-blue-200 to-transparent"></div>
                 <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
-                  Team Resources
+                  Resources
                 </h3>
                 <div className="h-px flex-1 bg-gradient-to-l from-blue-200 to-transparent"></div>
               </div>

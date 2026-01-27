@@ -4,39 +4,17 @@ test.describe('Resources Library - Links & Filters', () => {
     test.beforeEach(async ({ page }) => {
         // Login as Admin
         await page.goto('/');
-        await page.getByText('Yamparala Rahul').click();
+        await page.getByRole('button', { name: 'Login', exact: true }).click();
+        await page.getByRole('button').filter({ hasText: 'Yamparala Rahul' }).click();
         await page.locator('input[type="password"]').fill('1234');
         await page.getByRole('button', { name: 'Log In' }).click();
-        await expect(page.getByText('Logged in as:')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByText('Welcome')).toBeVisible({ timeout: 15000 });
 
-        // Switch to Resources Tab
-        await page.getByRole('button', { name: 'RESOURCES' }).click();
+        // Default tab is Resources, no need to click trigger (it's gone anyway)
         await expect(page.locator('h2', { hasText: 'Resources' })).toBeVisible();
     });
 
-    test('Add a new resource and verify layout', async ({ page }) => {
-        const resourceTitle = `Resource ${Date.now()}`;
-        const resourceUrl = 'https://playwright.dev';
-
-        // 1. Click Add Resource
-        await page.getByRole('button', { name: 'Add Resource' }).click();
-
-        // 2. Fill form
-        await page.getByLabel('Title').fill(resourceTitle);
-        await page.getByLabel('URL').fill(resourceUrl);
-        await page.getByLabel('Category').fill('Testing Tools');
-        await page.getByLabel('Description').fill('The best tool for E2E testing.');
-
-        // 3. Save
-        await page.getByRole('button', { name: 'Add Resource' }).nth(1).click(); // Dialog button
-
-        // 4. Verify in Team Resources (since we are Admin)
-        await expect(page.getByText('Team Resources')).toBeVisible();
-        await expect(page.getByText(resourceTitle)).toBeVisible();
-
-        // 5. Check for Microlink preview (img should eventually load or show fallback)
-        await expect(page.locator(`img[alt="${resourceTitle}"]`)).toBeVisible();
-    });
+    // test('Add a new resource and verify layout', async ({ page }) => { ... }) removed as Add Resource button is gone from UI
 
     test('Filter resources by Category', async ({ page }) => {
         // 1. Select a category from the first dropdown

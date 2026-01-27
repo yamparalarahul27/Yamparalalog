@@ -294,6 +294,26 @@ app.put("/make-server-e66bfe94/users/:id/pin", async (c) => {
   }
 });
 
+// Update user access
+app.put("/make-server-e66bfe94/users/:id/access", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const { accessibleTabs } = await c.req.json();
+
+    const existing = await kv.get(`user:${id}`);
+    if (!existing) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    const updatedUser = { ...existing, accessibleTabs };
+    await kv.set(`user:${id}`, updatedUser);
+    return c.json({ user: updatedUser });
+  } catch (error) {
+    console.log(`Error updating user access: ${error}`);
+    return c.json({ error: "Failed to update user access", details: String(error) }, 500);
+  }
+});
+
 // Create a new user
 app.post("/make-server-e66bfe94/users", async (c) => {
   try {
