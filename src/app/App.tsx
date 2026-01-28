@@ -562,13 +562,10 @@ export default function App() {
               <div className="size-10 overflow-hidden rounded-lg shadow-sm">
                 <img src="/images/app-logo.png" alt="App Logo" className="w-full h-full object-cover" />
               </div>
-              <div>
+              <div className="flex flex-col">
                 <h1 className="text-3xl font-bold">
                   Yamparala Dev App
                 </h1>
-                <p className="text-sm text-gray-600">
-                  Welcome
-                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -587,53 +584,14 @@ export default function App() {
                 ₹ Support Developer
               </Button>
 
-              {/* Options Grouping Dropdown / Login Button */}
-              {currentUser?.id === "guest" ? (
-                <Button
-                  onClick={() => setShowLoginOverlay(true)}
-                  className="rounded-full gap-2"
-                >
-                  <Lock className="h-4 w-4" />
-                  Login
-                </Button>
-              ) : (
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-200 bg-white rounded-full hover:bg-gray-50 transition-colors focus:outline-none cursor-pointer"
-                  >
-                    Login <ChevronDown className="h-4 w-4" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-white shadow-2xl z-[999] p-1 border border-gray-100">
-                    <DropdownMenuItem
-                      className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md"
-                      onClick={() => setSettingsOpen(true)}
-                    >
-                      <Settings className="h-4 w-4" />
-                      <span>Settings</span>
-                    </DropdownMenuItem>
-
-                    {(currentUser?.id === "admin" || currentUser?.accessibleTabs?.includes("users")) && (
-                      <DropdownMenuItem
-                        className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 rounded-md"
-                        onClick={() => setAdminPanelOpen(true)}
-                      >
-                        <Users className="h-4 w-4" />
-                        <span>Admin Panel</span>
-                      </DropdownMenuItem>
-                    )}
-
-                    <DropdownMenuSeparator className="my-1 bg-gray-100 h-px" />
-
-                    <DropdownMenuItem
-                      className="flex items-center gap-2 px-3 py-2 cursor-pointer text-red-600 hover:bg-red-50 rounded-md"
-                      onClick={handleLogout}
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span>Logout</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+              {/* Simple Login Button - Opens Overlay regardless of state */}
+              <Button
+                onClick={() => setShowLoginOverlay(true)}
+                className="rounded-full gap-2"
+              >
+                <Lock className="h-4 w-4" />
+                Login
+              </Button>
             </div>
           </div>
         </div>
@@ -651,6 +609,24 @@ export default function App() {
           }
           className="mb-6"
         >
+
+          {/* Main Navigation (Visible only to Admin) */}
+          {currentUser?.id === "admin" && (
+            <TabsList className="mb-4">
+              <TabsTrigger value="resources" className="gap-2">
+                <FolderOpen className="h-4 w-4" />
+                Resources
+              </TabsTrigger>
+              <TabsTrigger value="logs" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Logs
+              </TabsTrigger>
+              <TabsTrigger value="wiki" className="gap-2">
+                <BookOpen className="h-4 w-4" />
+                Wiki
+              </TabsTrigger>
+            </TabsList>
+          )}
 
           {/* Wiki Tab Content */}
           <TabsContent value="wiki" className="mt-6">

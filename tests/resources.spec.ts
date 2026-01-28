@@ -8,7 +8,7 @@ test.describe('Resources Library - Links & Filters', () => {
         await page.getByRole('button').filter({ hasText: 'Yamparala Rahul' }).click();
         await page.locator('input[type="password"]').fill('1234');
         await page.getByRole('button', { name: 'Log In' }).click();
-        await expect(page.getByText('Welcome')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('input[type="password"]')).not.toBeVisible();
 
         // Default tab is Resources, no need to click trigger (it's gone anyway)
         await expect(page.locator('h2', { hasText: 'Resources' })).toBeVisible();

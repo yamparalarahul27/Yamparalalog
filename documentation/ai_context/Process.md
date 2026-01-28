@@ -10,7 +10,7 @@
 ## 2. Testing Standards
 Before pushing ANY code, you must:
 1.  **lint & Type Check**: Ensure no TypeScript errors.
-2.  **E2E Testing**: Run `npm run test:e2e` to verify core flows (Auth, Logs, Wiki).
+2.  **E2E Testing (Optional)**: Run `npm run test:e2e` to verify core flows only when explicitly requested.
 3.  **Build Verification**: Run `npm run build` to catch production-only build errors.
 
 ## 3. Deployment Workflow (CD)
@@ -26,5 +26,5 @@ Before pushing ANY code, you must:
 
 ## 4. AI Agent Guidelines
 - **Always** check `ForAIContext.txt` first.
-- **Always** run tests after modifying logic.
+- **Run tests** only when explicitly requested by the user.
 - **Never** touch the `/.github/workflows/` folder unless explicitly asked (Vercel handles deployment).

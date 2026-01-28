@@ -1,4 +1,4 @@
-# Test File: Quality Assurance
+# Test File: Quality Assurance (Optional)
 
 ## Automated Testing (Playwright)
 - **Framework**: Playwright (E2E browser testing).

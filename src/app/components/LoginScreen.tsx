@@ -104,78 +104,29 @@ export function LoginScreen({ users, onLogin, loading = false, onClose }: LoginS
                 </>
               ) : (
                 (() => {
-                  const designTeamNames = ["Praveen", "Shaina Mishra"];
-                  const designTeamUsers = users.filter(u => designTeamNames.includes(u.name));
-                  const otherUsers = users.filter(u => !designTeamNames.includes(u.name));
-                  const isUserInDesignTeam = (user: User | null) => user && designTeamNames.includes(user.name);
+                  const adminUser = users.find(u => u.id === "admin");
 
                   return (
                     <div className="space-y-2 md:grid md:grid-cols-3 md:gap-4 md:space-y-0">
-                      {/* Other Users */}
-                      {otherUsers.map((user) => (
+                      {adminUser && (
                         <button
-                          key={user.id}
+                          key={adminUser.id}
                           type="button"
                           onClick={() => {
-                            setSelectedUser(user);
+                            setSelectedUser(adminUser);
                             setError("");
                             setPin("");
                           }}
                           disabled={isLoggingIn}
-                          className={`w-full p-4 border-2 rounded-lg text-left transition-all ${selectedUser?.id === user.id
+                          className={`w-full p-4 border-2 rounded-lg text-left transition-all ${selectedUser?.id === adminUser.id
                             ? "border-blue-500 bg-blue-50"
                             : "border-gray-200 hover:border-gray-300"
                             } ${isLoggingIn ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
-                          <div className="font-semibold">{user.name}</div>
-                          <div className="text-sm text-gray-600">{user.role}</div>
+                          <div className="font-semibold">{adminUser.name}</div>
+                          <div className="text-sm text-gray-600">{adminUser.role}</div>
                         </button>
-                      ))}
-
-                      {/* Design Team Group */}
-                      <div className={`space-y-2 rounded-xl transition-colors duration-200 ${isDesignTeamExpanded ? 'bg-gray-50/80 p-2 border border-gray-100' : ''}`}>
-                        <button
-                          type="button"
-                          onClick={() => setIsDesignTeamExpanded(!isDesignTeamExpanded)}
-                          disabled={isLoggingIn}
-                          className={`w-full p-4 border-2 rounded-lg text-left transition-all flex items-center justify-between ${isUserInDesignTeam(selectedUser) || isDesignTeamExpanded
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 hover:border-gray-300 bg-white"
-                            } ${isLoggingIn ? "opacity-50 cursor-not-allowed" : ""}`}
-                        >
-                          <div>
-                            <div className="font-semibold">Design Team Users</div>
-                            <div className="text-sm text-gray-600">Praveen & Shaina</div>
-                          </div>
-                          <div className={`transition-transform ${isDesignTeamExpanded ? 'rotate-180' : ''}`}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6" /></svg>
-                          </div>
-                        </button>
-
-                        {isDesignTeamExpanded && (
-                          <div className="grid gap-2 pl-2 animate-in slide-in-from-top-2 duration-200">
-                            {designTeamUsers.map((user) => (
-                              <button
-                                key={user.id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setError("");
-                                  setPin("");
-                                }}
-                                disabled={isLoggingIn}
-                                className={`w-full p-4 border-2 rounded-lg text-left transition-all ${selectedUser?.id === user.id
-                                  ? "border-blue-500 bg-blue-50"
-                                  : "border-white hover:border-gray-200 bg-white/50"
-                                  } ${isLoggingIn ? "opacity-50 cursor-not-allowed" : ""}`}
-                              >
-                                <div className="font-semibold">{user.name}</div>
-                                <div className="text-sm text-gray-600">{user.role}</div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
                   );
                 })()

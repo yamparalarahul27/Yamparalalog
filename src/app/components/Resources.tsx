@@ -261,8 +261,17 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
           </p>
         </div>
 
-        {/* Filters moved to header */}
+        {/* Filters and Add Button in header */}
         <div className="flex items-center space-x-2">
+          {currentUser?.id === "admin" && (
+            <Button
+              onClick={handleOpenDialog}
+              className="gap-2 h-9 rounded-md bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4" />
+              Add Resource
+            </Button>
+          )}
           <Select
             value={selectedCategory}
             onValueChange={(value) => setSelectedCategory(value)}
