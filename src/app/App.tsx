@@ -636,7 +636,7 @@ export default function App() {
           {/* Logs Tab Content */}
           <TabsContent value="logs" className="mt-6">
             {/* User Tabs (Enabled if user has 'users' permission or is admin) */}
-            {(currentUser?.id === "admin" || currentUser?.accessibleTabs?.includes("users")) && users.length > 0 && (
+            {currentUser?.id === "admin" && users.length > 0 && (
               <div className="mb-6">
                 <Tabs
                   value={selectedTab}
