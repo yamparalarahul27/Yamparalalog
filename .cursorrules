@@ -1,0 +1,24 @@
+# Project Context & AI Guidelines
+
+You are an AI programming assistant working on the "Design Log Tracker" repository. 
+You must STRICTLY adhere to the contextual requirements of this project, which prioritizes tracking engineering decisions in a simple, fast interface.
+
+## Mandatory Reading
+Before making any architectural, API, or deep UI changes, you MUST read the following file in its entirety:
+`ForAIContext.txt` (located in the project root)
+
+That file outlines the required reading order for the documents inside `documentation/ai_context`. Do NOT skip this step if you are asked to implement a new feature.
+
+## Core Rules
+1. **No SQL or Relational Databases:** This project relies entirely on Supabase KV store (`@supabase/kv`). Do not install Prisma, Drizzle, or any SQL drivers. Look at `supabase/functions/server` for how data is handled.
+2. **Minimalism & Speed:** Do not introduce heavy dependencies or complex state machines (e.g., Redux). The app uses React context and custom hooks (see `src/app/hooks`).
+3. **No Real-time Features:** We do not use websockets or Supabase real-time subscriptions. The app is strictly HTTP-based for logging.
+4. **Authentication:** The app uses local PIN-based authentication. Do not rewrite auth to use Supabase Auth, OAuth, or JWTs.
+
+## Style Conventions
+- **UI Components:** Use Radix UI and the existing Tailwind CSS setup in `src/app/components/ui`.
+- **TypeScript:** Always enforce strong typing. Use the interfaces defined in `src/app/components/types.ts`. Avoid `any`.
+- **File Structure:** 
+  - `src/app/components/` for purely UI/presentational elements.
+  - `src/app/hooks/` for business logic and data fetching.
+  - `src/app/api/` for API client functions talking to the Supabase Edge Function.

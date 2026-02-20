@@ -1,61 +1,20 @@
-**Add your own guidelines here**
-<!--
+# System Guidelines
 
-System Guidelines
+Use this file to govern the AI's behavior within this codebase. 
 
-Use this file to provide the AI with rules and guidelines you want it to follow.
-This template outlines a few examples of things you can add. You can add your own sections and format it to suit your needs
+## General Architecture Rules
 
-TIP: More context isn't always better. It can confuse the LLM. Try and add the most important rules you need
+1. **State Management:** Keep state local when possible, or extract complex state orchestration into custom hooks inside `src/app/hooks/`. Do not introduce global state managers.
+2. **API Communication:** All communication with the backend MUST go through `apiClient` defined in `src/app/api/index.ts`. Do not make raw `fetch` or `axios` calls from components.
+3. **Immutability:** Always treat state as immutable. Use functional setState patterns or array mapping when updating logs or users.
 
-# General guidelines
+## UI/UX Guidelines
 
-Any general rules you want the AI to follow.
-For example:
+* **Colors & Theme:** The application uses a subtle, minimal theme defined in `tailwind.config.ts`. Prefer existing utility classes for spacing (e.g., `gap-4`, `p-6`) over arbitrary values.
+* **Component Splitting:** If a component grows over 200 lines, extract its parts. For example, large dialogs should have their form logic split from their presentation.
+* **Icons:** Use `lucide-react` for all iconography. Ensure icons have consistent `size` props aligned with surrounding text (usually `h-4 w-4` or `h-5 w-5`).
 
-* Only use absolute positioning when necessary. Opt for responsive and well structured layouts that use flexbox and grid by default
-* Refactor code as you go to keep code clean
-* Keep file sizes small and put helper functions and components in their own files.
+## Documentation & AI Collaboration
 
---------------
-
-# Design system guidelines
-Rules for how the AI should make generations look like your company's design system
-
-Additionally, if you select a design system to use in the prompt box, you can reference
-your design system's components, tokens, variables and components.
-For example:
-
-* Use a base font-size of 14px
-* Date formats should always be in the format “Jun 10”
-* The bottom toolbar should only ever have a maximum of 4 items
-* Never use the floating action button with the bottom toolbar
-* Chips should always come in sets of 3 or more
-* Don't use a dropdown if there are 2 or fewer options
-
-You can also create sub sections and add more specific details
-For example:
-
-
-## Button
-The Button component is a fundamental interactive element in our design system, designed to trigger actions or navigate
-users through the application. It provides visual feedback and clear affordances to enhance user experience.
-
-### Usage
-Buttons should be used for important actions that users need to take, such as form submissions, confirming choices,
-or initiating processes. They communicate interactivity and should have clear, action-oriented labels.
-
-### Variants
-* Primary Button
-  * Purpose : Used for the main action in a section or page
-  * Visual Style : Bold, filled with the primary brand color
-  * Usage : One primary button per section to guide users toward the most important action
-* Secondary Button
-  * Purpose : Used for alternative or supporting actions
-  * Visual Style : Outlined with the primary color, transparent background
-  * Usage : Can appear alongside a primary button for less important actions
-* Tertiary Button
-  * Purpose : Used for the least important actions
-  * Visual Style : Text-only with no border, using primary color
-  * Usage : For actions that should be available but not emphasized
--->
+* **TypeScript Definitions:** Any new data structure must be added to `src/app/components/types.ts` with comprehensive JSDoc comments explaining its purpose in the product domain. This helps subsequent AI agents understand the intent.
+* **Context Overlap:** If an instruction contradicts `ForAIContext.txt`, ALWAYS defer to `ForAIContext.txt`. It is the definitive source of truth.

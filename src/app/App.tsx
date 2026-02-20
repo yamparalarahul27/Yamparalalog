@@ -20,6 +20,7 @@ import { LoginScreen } from "@/app/components/LoginScreen"; // PIN authenticatio
 import { AddLogDialog } from "@/app/components/AddLogDialog"; // Dialog for adding/editing logs
 import { ViewLogDialog } from "@/app/components/ViewLogDialog"; // Dialog for viewing log details
 import { DesignLogCard } from "@/app/components/DesignLogCard"; // Card view for individual logs
+import { AppHeader } from "@/app/components/layout/AppHeader";
 import { DashboardStats } from "@/app/components/DashboardStats"; // Statistics dashboard
 import { TimelineView } from "@/app/components/TimelineView"; // Timeline view for logs
 import { Wiki } from "@/app/components/Wiki"; // Wiki tab component
@@ -58,15 +59,39 @@ import {
 } from "@/app/components/ui/dropdown-menu";
 import { apiClient } from "@/services/api-client"; // Centralized API client
 import { Agentation } from "agentation"; // AI Feedback Tool
+import { useAuth } from "@/app/hooks/useAuth";
+import { useLogs } from "@/app/hooks/useLogs";
+
 
 export default function App() {
-  // ===== STATE MANAGEMENT =====
-  // User-related state
-  const [users, setUsers] = useState<User[]>([]); // All users in system
-  const [currentUser, setCurrentUser] = useState<User | null>(null); // Currently logged in user
+  // ===== HOOKS & STATE =====
+  const {
+    users,
+    currentUser,
+    usersLoading,
+    setCurrentUser,
+    loadUsers,
+    login,
+    logout,
+    updatePin,
+    updateUserPin,
+    addUser,
+    updateUserAccess,
+    deleteUser,
+  } = useAuth();
 
-  // Log-related state
-  const [allLogs, setAllLogs] = useState<DesignLog[]>([]); // All logs from backend (filtered by role)
+  const {
+    allLogs,
+    loading,
+    setAllLogs,
+    loadLogs,
+    saveLog,
+    deleteLog,
+    addComment,
+    restoreLog,
+    permanentDeleteLog,
+  } = useLogs(currentUser);
+
   const [logs, setLogs] = useState<DesignLog[]>([]); // Filtered/sorted logs for display
 
   // Dialog state
@@ -79,10 +104,6 @@ export default function App() {
   const [trashOpen, setTrashOpen] = useState(false); // Trash bin dialog
   const [upiOpen, setUpiOpen] = useState(false); // UPI Payment dialog
 
-  // Loading state
-  const [loading, setLoading] = useState(true); // Logs loading state
-  const [usersLoading, setUsersLoading] = useState(true); // Users loading state
-
   // Navigation and filtering
   const [selectedTab, setSelectedTab] = useState(""); // Selected user tab (Admin only)
   const [selectedCategory, setSelectedCategory] = useState("all"); // Category filter
@@ -93,444 +114,69 @@ export default function App() {
 
   // ===== EFFECTS =====
 
-  // Load users on app mount
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [loadUsers]);
 
-  // Load logs when user logs in
   useEffect(() => {
     if (currentUser) {
       loadLogs();
     }
-  }, [currentUser]);
+  }, [currentUser, loadLogs]);
 
-  // Initialize selected tab when user logs in
   useEffect(() => {
-    // Admin starts on their own tab, users don't have tabs
     if (currentUser && !selectedTab) {
       setSelectedTab(currentUser.id);
     }
-
-    // Set default tab based on user's accessible tabs
     if (currentUser && currentUser.accessibleTabs) {
       const tabs = currentUser.accessibleTabs;
-      // Default to first accessible tab
       if (!tabs.includes(mainTab)) {
         setMainTab(tabs[0] as "wiki" | "logs" | "resources");
       }
     }
-  }, [currentUser, users]);
+  }, [currentUser, users, mainTab, selectedTab]);
 
-  // Filter and sort logs based on selected tab, category, and sort order
   useEffect(() => {
     if (selectedTab) {
-      // Filter by selected user tab
-      let filtered = allLogs.filter(
-        (log) => log.userId === selectedTab && !log.deleted,
-      );
-
-      // Apply category filter
+      let filtered = allLogs.filter((log) => log.userId === selectedTab && !log.deleted);
       if (selectedCategory !== "all") {
-        filtered = filtered.filter(
-          (log) => log.category === selectedCategory,
-        );
+        filtered = filtered.filter((log) => log.category === selectedCategory);
       }
-
-      // Apply sorting
       const sorted = [...filtered].sort((a, b) => {
         const dateA = new Date(a.date).getTime();
         const dateB = new Date(b.date).getTime();
-        return sortBy === "newest"
-          ? dateB - dateA
-          : dateA - dateB;
+        return sortBy === "newest" ? dateB - dateA : dateA - dateB;
       });
-
       setLogs(sorted);
     }
   }, [selectedTab, allLogs, selectedCategory, sortBy]);
 
-  // ===== DATA LOADING FUNCTIONS =====
-
-  /**
-   * Load all users from backend
-   * Connects to: /src/app/api/users.ts → /supabase/functions/server/index.tsx → KV store (user:*)
-   */
-  const loadUsers = async () => {
-    try {
-      const fetchedUsers = await apiClient.users.getAll();
-
-      // Migration: Rename Admin role to Yamparala Rahul for better branding
-      const migratedUsers = fetchedUsers.map((user) => {
-        if (user.id === "admin") {
-          return {
-            ...user,
-            name: "Yamparala Rahul",
-            role: "Lead Design Engineer",
-          };
-        }
-        return user;
-      });
-
-      setUsers(migratedUsers);
-
-      // Auto-login as Guest if no user is set
-      const guestUser = migratedUsers.find((u: User) => u.id === "guest");
-      if (guestUser && !currentUser) {
-        setCurrentUser(guestUser);
-      }
-    } catch (error) {
-      console.error("Error loading users:", error);
-      toast.error("Failed to load users");
-    } finally {
-      setUsersLoading(false);
-    }
-  };
-
-  /**
-   * Load design logs from backend
-   * Connects to: /src/app/api/logs.ts → /supabase/functions/server/index.tsx → KV store (log:*)
-   * 
-   * ROLE-BASED FILTERING:
-   * - Admin: Sees ALL logs from all users
-   * - Regular users: See only their own logs
-   */
-  const loadLogs = async () => {
-    try {
-      setLoading(true);
-      const fetchedLogs = await apiClient.logs.getAll();
-
-      // Filter logs based on user role
-      let filteredLogs = fetchedLogs;
-      if (currentUser?.id !== "admin") {
-        // Regular users only see their own logs
-        filteredLogs = fetchedLogs.filter(
-          (log) => log.userId === currentUser?.id,
-        );
-      }
-
-      // Sort by date descending (newest first)
-      const sortedLogs = filteredLogs.sort(
-        (a, b) =>
-          new Date(b.date).getTime() -
-          new Date(a.date).getTime(),
-      );
-      setAllLogs(sortedLogs.map((log: DesignLog) => ({
-        ...log,
-        imageUrl: log.imageUrl // Ensure type consistency
-      })));
-      setLogs(sortedLogs);
-    } catch (error) {
-      console.error("Error loading logs:", error);
-      toast.error("Failed to load design logs");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // ===== EVENT HANDLERS =====
 
-  /**
-   * Handle user login
-   * Called from: /src/app/components/LoginScreen.tsx
-   * Updates user PIN if setting for first time
-   */
-  const handleLogin = async (user: User) => {
-    // If user is setting PIN for first time (has no PIN), update it
-    if (!user.pin) {
-      try {
-        await apiClient.users.updatePin(user.id, user.pin || "");
-        // Optimization: Update local users state directly instead of full re-fetch
-        setUsers(users.map(u => u.id === user.id ? { ...u, pin: user.pin } : u));
-      } catch (error) {
-        console.error("Error updating PIN:", error);
-      }
-    }
-    setCurrentUser(user);
-    toast.success(`Welcome, ${user.name}!`);
+  const handleSaveLog = async (logData: Omit<DesignLog, "id"> | DesignLog, imageFile?: File | null) => {
+    await saveLog(logData, imageFile);
+    setEditingLog(null);
   };
 
-  /**
-   * Handle user logout
-   * Clears currentUser state, which triggers LoginScreen to show
-   */
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setLogs([]);
-    toast.success("Logged out successfully");
-  };
-
-  /**
-   * Handle save log (create or update)
-   * Called from: /src/app/components/AddLogDialog.tsx
-   * 
-   * FLOW:
-   * 1. Upload image to Supabase Storage if provided
-   * 2. Create/update log with image URL
-   * 3. Update local state
-   * 4. Show toast notification
-   */
-  const handleSaveLog = async (
-    logData: Omit<DesignLog, "id"> | DesignLog,
-    imageFile?: File | null,
-  ) => {
-    try {
-      let imageUrl =
-        "id" in logData ? logData.imageUrl : undefined;
-
-      // Upload image if provided
-      // Connects to: /src/app/api/logs.ts → uploadImage() → Supabase Storage
-      if (imageFile) {
-        imageUrl = await apiClient.logs.uploadImage(imageFile);
-      }
-
-      const logWithImage = {
-        ...logData,
-        imageUrl,
-        userId: currentUser!.id,
-      };
-
-      if ("id" in logData) {
-        // Update existing log
-        const updatedLog = await apiClient.logs.update(
-          logWithImage as DesignLog,
-        );
-        setAllLogs(
-          allLogs.map((log) =>
-            log.id === updatedLog.id ? updatedLog : log,
-          ),
-        );
-        toast.success("Design log updated successfully");
-        setEditingLog(null);
-      } else {
-        // Add new log
-        const newLog = await apiClient.logs.create(logWithImage);
-        setAllLogs([newLog, ...allLogs]);
-        toast.success("Design log added successfully");
-      }
-    } catch (error) {
-      console.error("Error saving log:", error);
-      toast.error("Failed to save design log");
-    }
-  };
-
-  /**
-   * Handle edit log
-   * Opens AddLogDialog with log data pre-filled
-   */
   const handleEditLog = (log: DesignLog) => {
     setEditingLog(log);
     setDialogOpen(true);
   };
 
-  /**
-   * Handle view log
-   * Opens ViewLogDialog with log details
-   */
   const handleViewLog = (log: DesignLog) => {
     setViewingLog(log);
     setViewDialogOpen(true);
   };
 
-  /**
-   * Handle delete log
-   * Moves log to trash (soft delete)
-   */
   const handleDeleteLog = async (id: string) => {
-    try {
-      // OPTIMISTIC UPDATE: Update UI instantly
-      setAllLogs(allLogs.filter(log => log.id !== id));
-      setLogs(logs.filter(log => log.id !== id));
-
-      toast.success("Design log moved to trash");
-
-      // API call happens in the background
-      await apiClient.logs.delete(id);
-    } catch (error) {
-      console.error("Error deleting log:", error);
-      toast.error("Failed to delete design log");
-      // Rollback on error
-      loadLogs();
-    }
+    await deleteLog(id);
   };
 
-  /**
-   * Handle open dialog
-   * Opens AddLogDialog for creating a new log
-   */
   const handleOpenDialog = () => {
     setEditingLog(null);
     setDialogOpen(true);
   };
 
-  /**
-   * Handle update PIN
-   * Updates current user's PIN
-   */
-  const handleUpdatePin = async (newPin: string) => {
-    try {
-      await apiClient.users.updatePin(currentUser!.id, newPin);
-      const updatedUser = { ...currentUser!, pin: newPin };
-      setCurrentUser(updatedUser);
-      await loadUsers();
-      toast.success("PIN updated successfully");
-    } catch (error) {
-      console.error("Error updating PIN:", error);
-      toast.error("Failed to update PIN");
-    }
-  };
-
-  /**
-   * Handle update user PIN
-   * Admin function to update another user's PIN
-   */
-  const handleUpdateUserPin = async (
-    userId: string,
-    newPin: string,
-  ) => {
-    try {
-      await apiClient.users.updatePin(userId, newPin);
-      await loadUsers();
-      toast.success("User PIN updated successfully");
-    } catch (error) {
-      console.error("Error updating user PIN:", error);
-      toast.error("Failed to update user PIN");
-    }
-  };
-
-  /**
-   * Handle add user
-   * Admin function to add a new user
-   */
-  const handleAddUser = async (name: string, role: string) => {
-    try {
-      await apiClient.users.create({ name, role });
-      await loadUsers();
-      toast.success("User added successfully");
-    } catch (error) {
-      console.error("Error adding user:", error);
-      toast.error("Failed to add user");
-    }
-  };
-
-  /**
-   * Handle update user access
-   * Admin function to toggle access to specific tabs/features
-   */
-  const handleUpdateUserAccess = async (
-    userId: string,
-    tab: string,
-    enabled: boolean
-  ) => {
-    try {
-      const targetUser = users.find((u) => u.id === userId);
-      if (!targetUser) return;
-
-      // Calculate new tabs
-      // Default to what the user currently has, or empty if none (let backend/initialization handle defaults)
-      const currentTabs = targetUser.accessibleTabs || [];
-      let newTabs: string[];
-
-      if (enabled) {
-        newTabs = [...new Set([...currentTabs, tab])];
-      } else {
-        newTabs = currentTabs.filter((t) => t !== tab);
-      }
-
-      await apiClient.users.updateAccess(userId, newTabs);
-
-      // Update local state directly
-      setUsers(
-        users.map((u) =>
-          u.id === userId ? { ...u, accessibleTabs: newTabs } : u
-        )
-      );
-
-      toast.success(`User access updated`);
-    } catch (error) {
-      console.error("Error updating user access:", error);
-      toast.error("Failed to update user access");
-    }
-  };
-
-  /**
-   * Handle delete user
-   * Admin function to delete a user
-   */
-  const handleDeleteUser = async (userId: string) => {
-    try {
-      await apiClient.users.delete(userId);
-      await loadUsers();
-      toast.success("User deleted successfully");
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      toast.error("Failed to delete user");
-    }
-  };
-
-  /**
-   * Handle add comment
-   * Adds a comment to a log
-   */
-  const handleAddComment = async (
-    logId: string,
-    commentText: string,
-  ) => {
-    try {
-      const updatedLog = await apiClient.logs.addComment(logId, {
-        text: commentText,
-        author: currentUser!.name,
-        authorId: currentUser!.id,
-      });
-      setAllLogs(
-        allLogs.map((log) =>
-          log.id === updatedLog.id ? updatedLog : log,
-        ),
-      );
-      toast.success("Comment added successfully");
-    } catch (error) {
-      console.error("Error adding comment:", error);
-      toast.error("Failed to add comment");
-    }
-  };
-
-  /**
-   * Handle restore log
-   * Restores a log from trash
-   */
-  const handleRestoreLog = async (id: string) => {
-    try {
-      const restoredLog = await apiClient.logs.restore(id);
-      setAllLogs(
-        allLogs.map((log) =>
-          log.id === restoredLog.id ? restoredLog : log,
-        ),
-      );
-      toast.success("Design log restored successfully");
-    } catch (error) {
-      console.error("Error restoring log:", error);
-      toast.error("Failed to restore design log");
-    }
-  };
-
-  /**
-   * Handle permanent delete log
-   * Permanently deletes a log from the system
-   */
-  const handlePermanentDeleteLog = async (id: string) => {
-    try {
-      await apiClient.logs.permanentDelete(id);
-      setAllLogs(allLogs.filter((log) => log.id !== id));
-      toast.success(
-        "Design log permanently deleted successfully",
-      );
-    } catch (error) {
-      console.error("Error permanently deleting log:", error);
-      toast.error("Failed to permanently delete design log");
-    }
-  };
-
-  // Get unique categories from logs based on selected tab
   const getAvailableCategories = (): string[] => {
     const tabLogs = allLogs.filter(
       (log) => log.userId === selectedTab && !log.deleted,
@@ -555,41 +201,10 @@ export default function App() {
     <div className="min-h-screen">
       {/* Header and controls - contained */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <div className="size-10 overflow-hidden rounded-lg shadow-sm">
-                <img src="/images/app-logo.png" alt="App Logo" className="w-full h-full object-cover" />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Support Developer Button - Rounded + ₹ + White Fill */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setUpiOpen(true);
-                }}
-                className="hidden md:flex items-center gap-2 text-indigo-600 hover:text-indigo-700 bg-white hover:bg-indigo-50 rounded-full border border-indigo-100 px-4 shadow-sm"
-              >
-                <div className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse" />
-                ₹ Support Developer
-              </Button>
-
-              {/* Simple Login Button - Opens Overlay regardless of state */}
-              <Button
-                onClick={() => setShowLoginOverlay(true)}
-                className="rounded-full gap-2"
-              >
-                <Lock className="h-4 w-4" />
-                Login
-              </Button>
-            </div>
-          </div>
-        </div>
+        <AppHeader
+          onLoginClick={() => setShowLoginOverlay(true)}
+          onSupportClick={() => setUpiOpen(true)}
+        />
 
         {/* Stats - Hidden for Guest or when loading */}
         {currentUser && currentUser.id !== "guest" && (
@@ -717,7 +332,7 @@ export default function App() {
                     onEdit={handleEditLog}
                     onDelete={handleDeleteLog}
                     currentUser={currentUser}
-                    onAddComment={handleAddComment}
+                    onAddComment={addComment}
                     allLogs={allLogs}
                   />
                 ))}
@@ -754,7 +369,7 @@ export default function App() {
             open={settingsOpen}
             onOpenChange={setSettingsOpen}
             currentUser={currentUser}
-            onUpdatePin={handleUpdatePin}
+            onUpdatePin={updatePin}
             onOpenSupport={() => setUpiOpen(true)}
           />
         )
@@ -763,17 +378,17 @@ export default function App() {
         open={adminPanelOpen}
         onOpenChange={setAdminPanelOpen}
         users={users}
-        onUpdateUserPin={handleUpdateUserPin}
-        onAddUser={handleAddUser}
-        onDeleteUser={handleDeleteUser}
-        onUpdateUserAccess={handleUpdateUserAccess}
+        onUpdateUserPin={updateUserPin}
+        onAddUser={addUser}
+        onDeleteUser={deleteUser}
+        onUpdateUserAccess={updateUserAccess}
       />
       <TrashDialog
         open={trashOpen}
         onOpenChange={setTrashOpen}
         deletedLogs={getDeletedLogs()}
-        onRestore={handleRestoreLog}
-        onPermanentDelete={handlePermanentDeleteLog}
+        onRestore={restoreLog}
+        onPermanentDelete={permanentDeleteLog}
       />
 
       <UPIDialog
@@ -791,7 +406,7 @@ export default function App() {
             <LoginScreen
               users={users}
               onLogin={(user: User) => {
-                handleLogin(user);
+                login(user);
                 setShowLoginOverlay(false);
               }}
               loading={usersLoading}
