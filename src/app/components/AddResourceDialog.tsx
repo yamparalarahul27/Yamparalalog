@@ -113,7 +113,7 @@ export function AddResourceDialog({
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Figma Design System"
+              placeholder="e.g., UI Design System"
               required
             />
           </div>

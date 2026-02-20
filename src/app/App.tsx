@@ -562,11 +562,6 @@ export default function App() {
               <div className="size-10 overflow-hidden rounded-lg shadow-sm">
                 <img src="/images/app-logo.png" alt="App Logo" className="w-full h-full object-cover" />
               </div>
-              <div className="flex flex-col">
-                <h1 className="text-3xl font-bold">
-                  Yamparala Dev App
-                </h1>
-              </div>
             </div>
             <div className="flex items-center gap-2">
               {/* Support Developer Button - Rounded + ₹ + White Fill */}
