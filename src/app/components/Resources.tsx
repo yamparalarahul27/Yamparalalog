@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/app/components/ui/button";
 import { AddResourceDialog } from "@/app/components/AddResourceDialog"; // Dialog for adding resources
-import { FileText, Link as LinkIcon, Plus, Trash2, Filter, ExternalLink } from "lucide-react"; // Icons
+import { FileText, Link as LinkIcon, Plus, Trash2, Filter, ExternalLink, Pencil } from "lucide-react"; // Icons
 import { User } from "@/app/components/types"; // TypeScript interface for User
 import { toast } from "sonner"; // Toast notifications
 import { apiClient, Resource } from "@/services/api-client"; // API client
@@ -57,14 +57,29 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
    */
   const handleSaveResource = async (resourceData: Omit<Resource, "id">) => {
     try {
-      const newResource = await apiClient.resources.create({
-        ...resourceData,
-        addedBy: currentUser.name,
-        addedById: currentUser.id,
-        isAdminResource: currentUser.id === "admin", // Flag for section separation
-      });
-      setResources([newResource, ...resources]);
-      toast.success("Resource added successfully");
+      if (editingResource) {
+        // Update existing resource
+        const updatedResource = await apiClient.resources.update(editingResource.id, {
+          ...resourceData,
+          isAdminResource: editingResource.isAdminResource, // preserve original flag
+          addedBy: editingResource.addedBy, // preserve original author
+          addedById: editingResource.addedById,
+          addedDate: editingResource.addedDate, // preserve original date
+        } as any);
+
+        setResources(resources.map(r => r.id === updatedResource.id ? updatedResource : r));
+        toast.success("Resource updated successfully");
+      } else {
+        // Create new resource
+        const newResource = await apiClient.resources.create({
+          ...resourceData,
+          addedBy: currentUser.name,
+          addedById: currentUser.id,
+          isAdminResource: currentUser.id === "admin", // Flag for section separation
+        } as any);
+        setResources([newResource, ...resources]);
+        toast.success("Resource added successfully");
+      }
     } catch (error) {
       console.error("Error saving resource:", error);
       toast.error("Failed to save resource");
@@ -186,13 +201,25 @@ export function Resources({ currentUser, allUsers }: ResourcesProps) {
             <LinkIcon className="h-5 w-5 text-blue-600 flex-shrink-0" />
             <h3 className="font-semibold line-clamp-1">{resource.title}</h3>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDeleteResource(resource.id)}
-          >
-            <Trash2 className="h-4 w-4 text-gray-400" />
-          </Button>
+          {currentUser?.id === "admin" && (
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEditResource(resource)}
+                className="text-gray-400 hover:text-blue-600"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeleteResource(resource.id)}
+              >
+                <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-600" />
+              </Button>
+            </div>
+          )}
         </div>
         <p className="text-sm text-gray-600 mb-3 line-clamp-2">
           {resource.description}
