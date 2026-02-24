@@ -20,7 +20,6 @@ export function AppHeader({ onLoginClick, onSupportClick }: AppHeaderProps) {
                     {/* Support Developer Button - Rounded + ₹ + White Fill */}
                     <Button
                         variant="outline"
-                        size="sm"
                         onClick={(e: React.MouseEvent) => {
                             e.preventDefault();
                             e.stopPropagation();
