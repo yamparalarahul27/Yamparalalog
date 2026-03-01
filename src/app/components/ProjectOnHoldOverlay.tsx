@@ -59,7 +59,7 @@ export function ProjectOnHoldOverlay({ onExplore }: ProjectOnHoldOverlayProps) {
                         >
                             <Button
                                 size="lg"
-                                className="w-full sm:w-auto gap-2 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 shadow-md shadow-indigo-200 transition-all hover:scale-105"
+                                className="w-full sm:w-auto gap-2 rounded-full bg-indigo-600 hover:bg-blue-700 text-white font-semibold px-8 shadow-md shadow-blue-200 transition-all hover:scale-105"
                             >
                                 <User className="h-4 w-4" />
                                 View Builder
