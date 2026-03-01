@@ -32,6 +32,7 @@ import { FilterBar } from "@/app/components/FilterBar"; // Filtering and view mo
 import { TrashDialog } from "@/app/components/TrashDialog"; // Deleted logs (trash bin) dialog
 import UPIDialog from "@/app/components/UPIDialog"; // UPI Payment dialog
 import { DesignLog, User } from "@/app/components/types"; // TypeScript interfaces
+import { ProjectOnHoldOverlay } from "@/app/components/ProjectOnHoldOverlay";
 import {
   Plus,
   LogOut,
@@ -93,6 +94,7 @@ export default function App() {
   } = useLogs(currentUser);
 
   const [logs, setLogs] = useState<DesignLog[]>([]); // Filtered/sorted logs for display
+  const [showOnHoldOverlay, setShowOnHoldOverlay] = useState(true); // Project on Hold overlay
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false); // Add/Edit log dialog
@@ -199,6 +201,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      {/* Project On Hold Overlay */}
+      {showOnHoldOverlay && (
+        <ProjectOnHoldOverlay onExplore={() => setShowOnHoldOverlay(false)} />
+      )}
       {/* Header and controls - contained */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <AppHeader
