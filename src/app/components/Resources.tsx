@@ -76,7 +76,7 @@ export function Resources() {
   let filteredResources = resources.filter((resource) => {
     const matchesQuery =
       query.trim() === "" ||
-      [resource.title, resource.notes, resource.url, resource.source, resource.category]
+      [resource.title, resource.notes, resource.url, resource.source, resource.category, resource.toolSubcategory ?? ""]
         .join(" ")
         .toLowerCase()
         .includes(query.trim().toLowerCase());
@@ -338,6 +338,11 @@ export function Resources() {
                         <Badge variant="secondary" className="bg-slate-100 text-slate-700">
                           {resource.category}
                         </Badge>
+                        {resource.toolSubcategory && (
+                          <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+                            {resource.toolSubcategory}
+                          </Badge>
+                        )}
                         <Badge variant="outline" className="border-slate-200 text-slate-600">
                           {resource.source}
                         </Badge>

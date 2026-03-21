@@ -5,6 +5,7 @@ type ResourceRecord = {
   title: string;
   url: string;
   category: string;
+  tool_subcategory: "Dev tool" | "UX tool" | null;
   source: string;
   notes: string;
   saved_at: string;
@@ -70,6 +71,26 @@ test("creates the first saved resource", async ({ page }) => {
   await expect(page.getByText("Good reference for accessible interaction patterns.")).toBeVisible();
 });
 
+test("shows tool subcategories for tool resources", async ({ page }) => {
+  await mockResourceApi(page, []);
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Save the first resource" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Save resource" });
+  await dialog.getByLabel("Title *").fill("Mobbin");
+  await dialog.getByLabel("URL *").fill("mobbin.com");
+  await dialog.getByLabel("Source").fill("Mobbin");
+  await dialog.getByLabel("Select a category").click();
+  await page.getByRole("option", { name: "Tools" }).click();
+  await dialog.getByLabel("Select a tool subcategory").click();
+  await page.getByRole("option", { name: "UX tool" }).click();
+  await dialog.getByRole("button", { name: "Save resource" }).click();
+
+  await expect(page.getByRole("heading", { name: "Mobbin" })).toBeVisible();
+  await expect(page.getByText("UX tool")).toBeVisible();
+});
+
 test("filters, edits, and deletes resources", async ({ page }) => {
   await mockResourceApi(page, [
     {
@@ -77,6 +98,7 @@ test("filters, edits, and deletes resources", async ({ page }) => {
       title: "Aceternity components",
       url: "https://ui.aceternity.com",
       category: "Inspiration",
+      tool_subcategory: null,
       source: "Aceternity",
       notes: "Useful visual reference ideas.",
       saved_at: "2026-03-20T10:00:00.000Z",
@@ -86,6 +108,7 @@ test("filters, edits, and deletes resources", async ({ page }) => {
       title: "React docs",
       url: "https://react.dev",
       category: "Docs",
+      tool_subcategory: null,
       source: "React",
       notes: "Official docs and API references.",
       saved_at: "2026-03-19T10:00:00.000Z",
@@ -107,6 +130,6 @@ test("filters, edits, and deletes resources", async ({ page }) => {
 
   await page.getByLabel("Delete Aceternity UI").click();
   await page.getByRole("button", { name: "Delete resource" }).click();
-  await expect(page.getByText("Aceternity UI")).not.toBeVisible();
-  await expect(page.getByText("React docs")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Aceternity UI" })).not.toBeVisible();
+  await expect(page.getByRole("heading", { name: "React docs" })).toBeVisible();
 });

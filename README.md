@@ -1,6 +1,6 @@
 ## Resource Library
 
-This project is a simplified resource library for saving useful links with a source, category, notes, and saved date.
+This project is a simplified resource library for saving useful links with a source, category, notes, saved date, and a tool subcategory for resources in `Tools`.
 
 ## Local setup
 
@@ -11,7 +11,7 @@ This project is a simplified resource library for saving useful links with a sou
 
 ## Supabase setup
 
-Run the SQL in [20260321_create_resources.sql](/Users/yamparalarahul/Desktop/ylog/Yamparalalog/supabase/migrations/20260321_create_resources.sql) in the Supabase SQL editor, or apply it with the Supabase CLI.
+Run the SQL in [20260321_create_resources.sql](/Users/yamparalarahul/Desktop/ylog/Yamparalalog/supabase/migrations/20260321_create_resources.sql) and [20260321_add_tool_subcategory_to_resources.sql](/Users/yamparalarahul/Desktop/ylog/Yamparalalog/supabase/migrations/20260321_add_tool_subcategory_to_resources.sql) in the Supabase SQL editor, or apply them with the Supabase CLI.
 
 ## Vercel env vars
 

@@ -20,6 +20,7 @@ import {
 import { Textarea } from "@/app/components/ui/textarea";
 
 type ResourceDraft = Omit<Resource, "id">;
+const TOOL_SUBCATEGORY_CHOICES: Array<NonNullable<Resource["toolSubcategory"]>> = ["Dev tool", "UX tool"];
 
 interface AddResourceDialogProps {
   open: boolean;
@@ -46,6 +47,9 @@ export function AddResourceDialog({
   const [title, setTitle] = useState(editingResource?.title ?? "");
   const [url, setUrl] = useState(editingResource?.url ?? "");
   const [category, setCategory] = useState(editingResource?.category ?? categoryChoices[0] ?? "Other");
+  const [toolSubcategory, setToolSubcategory] = useState<Resource["toolSubcategory"]>(
+    editingResource?.category === "Tools" ? editingResource.toolSubcategory ?? "Dev tool" : null,
+  );
   const [source, setSource] = useState(editingResource?.source ?? "");
   const [notes, setNotes] = useState(editingResource?.notes ?? "");
   const [fieldError, setFieldError] = useState<string | null>(null);
@@ -91,6 +95,7 @@ export function AddResourceDialog({
       title: title.trim(),
       url: normalizedUrl,
       category,
+      toolSubcategory: category === "Tools" ? toolSubcategory ?? "Dev tool" : null,
       source: source.trim() || guessSource(normalizedUrl),
       notes: notes.trim(),
       savedAt: editingResource?.savedAt ?? new Date().toISOString(),
@@ -154,7 +159,13 @@ export function AddResourceDialog({
 
             <div>
               <Label htmlFor="category">Category</Label>
-              <Select value={category} onValueChange={setCategory}>
+              <Select
+                value={category}
+                onValueChange={(value) => {
+                  setCategory(value);
+                  setToolSubcategory(value === "Tools" ? toolSubcategory ?? "Dev tool" : null);
+                }}
+              >
                 <SelectTrigger aria-label="Select a category">
                   <SelectValue />
                 </SelectTrigger>
@@ -168,6 +179,27 @@ export function AddResourceDialog({
               </Select>
             </div>
           </div>
+
+          {category === "Tools" && (
+            <div>
+              <Label htmlFor="tool-subcategory">Tool subcategory</Label>
+              <Select
+                value={toolSubcategory ?? "Dev tool"}
+                onValueChange={(value) => setToolSubcategory(value as NonNullable<Resource["toolSubcategory"]>)}
+              >
+                <SelectTrigger id="tool-subcategory" aria-label="Select a tool subcategory">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TOOL_SUBCATEGORY_CHOICES.map((choice) => (
+                    <SelectItem key={choice} value={choice}>
+                      {choice}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="notes">Notes</Label>

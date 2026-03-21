@@ -3,6 +3,7 @@ export interface Resource {
   title: string;
   url: string;
   category: string;
+  toolSubcategory: "Dev tool" | "UX tool" | null;
   source: string;
   notes: string;
   savedAt: string;
