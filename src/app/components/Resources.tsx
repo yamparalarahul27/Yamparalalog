@@ -1,407 +1,460 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { AddResourceDialog } from "@/app/components/AddResourceDialog";
+import { Resource } from "@/app/components/types";
+import { useResources } from "@/app/hooks/useResources";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/app/components/ui/alert-dialog";
+import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
-import { AddResourceDialog } from "@/app/components/AddResourceDialog"; // Dialog for adding resources
-import { FileText, Link as LinkIcon, Plus, Trash2, Filter, ExternalLink, Pencil } from "lucide-react"; // Icons
-import { User } from "@/app/components/types"; // TypeScript interface for User
-import { toast } from "sonner"; // Toast notifications
-import { apiClient, Resource } from "@/services/api-client"; // API client
+import { Card } from "@/app/components/ui/card";
+import { Input } from "@/app/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/app/components/ui/select"; // Dropdown select component
+} from "@/app/components/ui/select";
+import { Skeleton } from "@/app/components/ui/skeleton";
+import { cn } from "@/app/components/ui/utils";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  FolderOpen,
+  Layers3,
+  Pencil,
+  Plus,
+  Search,
+  Tag,
+  Trash2,
+} from "lucide-react";
 
-interface ResourcesProps {
-  currentUser: User; // Currently logged-in user
-  allUsers: User[]; // All users in system (for filter dropdown)
+type SortValue = "newest" | "oldest" | "title";
+
+function formatSavedAt(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
 }
 
-export function Resources({ currentUser, allUsers }: ResourcesProps) {
-  // ===== STATE MANAGEMENT =====
-  const [resources, setResources] = useState<Resource[]>([]); // All resources from backend
-  const [dialogOpen, setDialogOpen] = useState(false); // Add resource dialog state
-  const [editingResource, setEditingResource] = useState<Resource | null>(null); // Resource being edited (future feature)
-  const [loading, setLoading] = useState(true); // Loading state
-  const [selectedCategory, setSelectedCategory] = useState("all"); // Category filter
-  const [selectedUser, setSelectedUser] = useState("all"); // User filter
+function getHostname(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
 
-  // ===== EFFECTS =====
+export function Resources() {
+  const { resources, loading, loadError, reload, createResource, updateResource, deleteResource } = useResources();
+  const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<SortValue>("newest");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogError, setDialogError] = useState<string | null>(null);
+  const [dialogSaving, setDialogSaving] = useState(false);
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [resourceToDelete, setResourceToDelete] = useState<Resource | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  // Load resources on component mount
-  useEffect(() => {
-    loadResources();
-  }, []);
+  const categories = Array.from(new Set(resources.map((resource) => resource.category))).sort();
+  const sources = Array.from(new Set(resources.map((resource) => resource.source))).sort();
 
-  /**
-   * Load all resources from backend
-   * Connects to: /src/app/api/resources.ts → backend → KV store (resource:*)
-   */
-  const loadResources = async () => {
-    try {
-      setLoading(true);
-      const fetchedResources = await apiClient.resources.getAll();
-      setResources(fetchedResources);
-    } catch (error) {
-      console.error("Error loading resources:", error);
-      toast.error("Failed to load resources");
-    } finally {
-      setLoading(false);
+  let filteredResources = resources.filter((resource) => {
+    const matchesQuery =
+      query.trim() === "" ||
+      [resource.title, resource.notes, resource.url, resource.source, resource.category]
+        .join(" ")
+        .toLowerCase()
+        .includes(query.trim().toLowerCase());
+
+    const matchesCategory = categoryFilter === "all" || resource.category === categoryFilter;
+    const matchesSource = sourceFilter === "all" || resource.source === sourceFilter;
+
+    return matchesQuery && matchesCategory && matchesSource;
+  });
+
+  filteredResources = [...filteredResources].sort((left, right) => {
+    if (sortBy === "title") {
+      return left.title.localeCompare(right.title);
     }
+
+    const leftTime = new Date(left.savedAt).getTime();
+    const rightTime = new Date(right.savedAt).getTime();
+    return sortBy === "newest" ? rightTime - leftTime : leftTime - rightTime;
+  });
+
+  const handleOpenCreate = () => {
+    setEditingResource(null);
+    setDialogError(null);
+    setDialogOpen(true);
   };
 
-  /**
-   * Handle save resource
-   * Creates a new resource with current user info and admin flag
-   */
-  const handleSaveResource = async (resourceData: Omit<Resource, "id">) => {
+  const handleOpenEdit = (resource: Resource) => {
+    setEditingResource(resource);
+    setDialogError(null);
+    setDialogOpen(true);
+  };
+
+  const handleSaveResource = async (resource: Omit<Resource, "id">) => {
+    setDialogError(null);
+    setDialogSaving(true);
+
     try {
       if (editingResource) {
-        // Update existing resource
-        const updatedResource = await apiClient.resources.update(editingResource.id, {
-          ...resourceData,
-          isAdminResource: editingResource.isAdminResource, // preserve original flag
-          addedBy: editingResource.addedBy, // preserve original author
-          addedById: editingResource.addedById,
-          addedDate: editingResource.addedDate, // preserve original date
-        } as any);
-
-        setResources(resources.map(r => r.id === updatedResource.id ? updatedResource : r));
-        toast.success("Resource updated successfully");
+        await updateResource(editingResource.id, resource);
+        toast.success("Resource updated");
       } else {
-        // Create new resource
-        const newResource = await apiClient.resources.create({
-          ...resourceData,
-          addedBy: currentUser.name,
-          addedById: currentUser.id,
-          isAdminResource: currentUser.id === "admin", // Flag for section separation
-        } as any);
-        setResources([newResource, ...resources]);
-        toast.success("Resource added successfully");
+        await createResource(resource);
+        toast.success("Resource saved");
       }
+
+      setEditingResource(null);
+      return true;
     } catch (error) {
-      console.error("Error saving resource:", error);
-      toast.error("Failed to save resource");
+      const message = error instanceof Error ? error.message : "We could not save that resource right now.";
+      setDialogError(message);
+      return false;
+    } finally {
+      setDialogSaving(false);
     }
   };
 
-  /**
-   * Handle delete resource
-   * Removes resource from backend and updates local state
-   */
-  const handleDeleteResource = async (id: string) => {
+  const handleDeleteResource = async () => {
+    if (!resourceToDelete) {
+      return;
+    }
+
+    setDeleteError(null);
+    setDeleting(true);
+
     try {
-      await apiClient.resources.delete(id);
-      setResources(resources.filter((r) => r.id !== id));
-      toast.success("Resource deleted successfully");
+      await deleteResource(resourceToDelete.id);
+      toast.success("Resource deleted");
+      setResourceToDelete(null);
     } catch (error) {
-      console.error("Error deleting resource:", error);
-      toast.error("Failed to delete resource");
+      const message = error instanceof Error ? error.message : "We could not delete that resource right now.";
+      setDeleteError(message);
+    } finally {
+      setDeleting(false);
     }
   };
 
-  /**
-   * Handle edit resource (future feature)
-   */
-  const handleEditResource = (resource: Resource) => {
-    setEditingResource(resource);
-    setDialogOpen(true);
-  };
-
-  /**
-   * Handle open dialog
-   * Opens AddResourceDialog for creating a new resource
-   */
-  const handleOpenDialog = () => {
-    setEditingResource(null);
-    setDialogOpen(true);
-  };
-
-  // ===== FILTERING LOGIC =====
-
-  // Separate resources into Admin and User sections
-  const adminResources = resources.filter((r) => r.isAdminResource);
-  const userResources = resources.filter((r) => !r.isAdminResource);
-
-  /**
-   * Apply filters to a list of resources
-   * Filters by category and user (who added it)
-   * Sorts by date (newest first)
-   */
-  const filterResources = (resourceList: Resource[]) => {
-    let filtered = resourceList;
-
-    // Category filter
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter((r) => r.category === selectedCategory);
-    }
-
-    // User filter
-    if (selectedUser !== "all") {
-      filtered = filtered.filter((r) => r.addedById === selectedUser);
-    }
-
-    // Sort by date (newest first)
-    filtered = filtered.sort((a, b) => {
-      return new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime();
-    });
-
-    return filtered;
-  };
-
-  // Apply filters to both sections
-  const filteredAdminResources = filterResources(adminResources);
-  const filteredUserResources = filterResources(userResources);
-
-  // Get unique categories from all resources
-  const categories = Array.from(
-    new Set(resources.map((r) => r.category))
-  ).sort();
-
-  /**
-   * RESOURCE CARD COMPONENT
-   * Displays individual resource with OG image preview
-   * 
-   * OG IMAGE FETCHING:
-   * - Uses Microlink API to fetch Open Graph meta tags
-   * - URL: https://api.microlink.io/?url={url}
-   * - Returns og:image from website's meta tags
-   * - Fallback to favicon if OG image not found
-   */
-  const ResourceCard = ({ resource }: { resource: Resource }) => (
-    <div
-      key={resource.id}
-      className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-    >
-      {/* OG Image Preview - fetches Open Graph image from website */}
-      <div className="relative h-40 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center overflow-hidden">
-        <img
-          src={`https://api.microlink.io/?url=${encodeURIComponent(resource.url)}&embed=image.url`}
-          alt={resource.title}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            // Fallback to favicon if OG image fails to load
-            const target = e.target as HTMLImageElement;
-            try {
-              const domain = new URL(resource.url).hostname;
-              target.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-              target.className = "w-16 h-16 object-contain";
-            } catch {
-              // If all fails, hide the image
-              target.style.display = "none";
-            }
-          }}
-        />
-      </div>
-
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2 flex-1">
-            <LinkIcon className="h-5 w-5 text-blue-600 flex-shrink-0" />
-            <h3 className="font-semibold line-clamp-1">{resource.title}</h3>
-          </div>
-          {currentUser?.id === "admin" && (
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEditResource(resource)}
-                className="text-gray-400 hover:text-blue-600"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDeleteResource(resource.id)}
-              >
-                <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-600" />
-              </Button>
-            </div>
-          )}
-        </div>
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-          {resource.description}
-        </p>
-        <div className="flex items-center justify-between">
-          <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-            {resource.category}
-          </span>
-          <a
-            href={resource.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
-          >
-            Open Link <ExternalLink className="h-3 w-3" />
-          </a>
-        </div>
-        <div className="text-xs text-gray-500 mt-3">
-          Shared by {resource.addedBy}, {formatDateTime(resource.addedDate)}
-        </div>
-      </div>
-    </div>
-  );
-
-  /**
-   * Format date and time for display
-   * Converts ISO timestamp to "17 Jan 2026, 6:09 PM" format
-   */
-  const formatDateTime = (isoString: string): string => {
-    const date = new Date(isoString);
-
-    const day = date.getDate();
-    const month = date.toLocaleString('en-US', { month: 'short' });
-    const year = date.getFullYear();
-
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    const displayMinutes = minutes.toString().padStart(2, '0');
-
-    return `${day} ${month} ${year}, ${displayHours}:${displayMinutes} ${ampm}`;
-  };
-
-  if (loading) {
-    return (
-      <div className="text-center py-16">
-        <img
-          src="/images/resource-folder-icon.png"
-          alt="Loading..."
-          className="w-24 h-24 object-contain mx-auto mb-4 animate-pulse opacity-80"
-        />
-        <p className="text-gray-600">Loading resources...</p>
-      </div>
-    );
-  }
+  const stats = [
+    { label: "Saved links", value: resources.length, icon: FolderOpen },
+    { label: "Categories", value: categories.length, icon: Tag },
+    { label: "Sources", value: sources.length, icon: Layers3 },
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Resources</h2>
-          <p className="text-gray-600">
-            Shared links, files, and helpful resources
-          </p>
-        </div>
+    <>
+      <main className="min-h-dvh">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+          <Card className="rounded-3xl border-slate-200 p-6 shadow-sm sm:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl space-y-3">
+                <Badge variant="secondary" className="w-fit bg-blue-50 text-blue-700">
+                  Resource library
+                </Badge>
+                <h1 className="text-4xl font-semibold text-slate-950 text-balance sm:text-5xl">
+                  Save every useful link in one place.
+                </h1>
+                <p className="max-w-2xl text-base text-slate-600 text-pretty">
+                  Keep articles, tools, videos, references, and inspiration together with the note that explains why
+                  they mattered when you found them.
+                </p>
+              </div>
 
-        {/* Filters and Add Button in header */}
-        <div className="flex items-center space-x-2">
-          {currentUser?.id === "admin" && (
-            <Button
-              onClick={handleOpenDialog}
-              className="gap-2 h-9 rounded-md bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" />
-              Add Resource
-            </Button>
-          )}
-          <Select
-            value={selectedCategory}
-            onValueChange={(value) => setSelectedCategory(value)}
-          >
-            <SelectTrigger className="w-32 h-9">
-              <SelectValue placeholder="Category">Category</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
+              <Button className="gap-2 self-start sm:self-auto" onClick={handleOpenCreate}>
+                <Plus className="size-4" />
+                Save resource
+              </Button>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {stats.map((stat) => (
+                <div key={stat.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-10 items-center justify-center rounded-full bg-white text-blue-700 shadow-sm">
+                      <stat.icon className="size-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">{stat.label}</p>
+                      <p className="text-2xl font-semibold text-slate-950 tabular-nums">{stat.value}</p>
+                    </div>
+                  </div>
+                </div>
               ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={selectedUser}
-            onValueChange={(value) => setSelectedUser(value)}
-          >
-            <SelectTrigger className="w-32 h-9">
-              <SelectValue placeholder="User">User</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              {allUsers.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.name}
-                </SelectItem>
+            </div>
+          </Card>
+
+          <Card className="rounded-3xl border-slate-200 p-4 shadow-sm sm:p-6">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  aria-label="Search resources"
+                  className="pl-9"
+                  placeholder="Search by title, notes, URL, source, or category"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </div>
+
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger aria-label="Filter by category">
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger aria-label="Filter by source">
+                  <SelectValue placeholder="All sources" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All sources</SelectItem>
+                  {sources.map((source) => (
+                    <SelectItem key={source} value={source}>
+                      {source}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortValue)}>
+                <SelectTrigger aria-label="Sort resources">
+                  <SelectValue placeholder="Newest first" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest first</SelectItem>
+                  <SelectItem value="oldest">Oldest first</SelectItem>
+                  <SelectItem value="title">Title A-Z</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </Card>
+
+          {loadError ? (
+            <Card className="rounded-3xl border-red-200 bg-red-50 p-6 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-lg font-semibold text-red-800 text-balance">The library could not be loaded.</h2>
+                  <p className="text-sm text-red-700 text-pretty">{loadError}</p>
+                </div>
+                <Button variant="outline" className="border-red-200 bg-white" onClick={reload}>
+                  Try again
+                </Button>
+              </div>
+            </Card>
+          ) : loading ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Card key={index} className="rounded-3xl border-slate-200 p-5 shadow-sm">
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                    </div>
+                    <div className="space-y-2">
+                      <Skeleton className="h-6 w-4/5" />
+                      <Skeleton className="h-4 w-2/3" />
+                    </div>
+                    <Skeleton className="h-16 w-full" />
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-9 w-24 rounded-full" />
+                    </div>
+                  </div>
+                </Card>
               ))}
-            </SelectContent>
-          </Select>
+            </div>
+          ) : resources.length === 0 ? (
+            <Card className="rounded-3xl border-dashed border-slate-300 p-10 text-center shadow-sm">
+              <div className="mx-auto max-w-lg space-y-3">
+                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-slate-100 text-blue-700">
+                  <FolderOpen className="size-5" />
+                </div>
+                <h2 className="text-2xl font-semibold text-slate-950 text-balance">Start your library with the next link you save.</h2>
+                <p className="text-slate-600 text-pretty">
+                  Add a resource once, tag where it came from, and leave a quick note for the future version of you.
+                </p>
+                <Button className="gap-2" onClick={handleOpenCreate}>
+                  <Plus className="size-4" />
+                  Save the first resource
+                </Button>
+              </div>
+            </Card>
+          ) : filteredResources.length === 0 ? (
+            <Card className="rounded-3xl border-slate-200 p-10 text-center shadow-sm">
+              <div className="mx-auto max-w-lg space-y-3">
+                <h2 className="text-2xl font-semibold text-slate-950 text-balance">No resources match these filters.</h2>
+                <p className="text-slate-600 text-pretty">
+                  Try a broader search or clear the category and source filters to bring everything back.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setQuery("");
+                    setCategoryFilter("all");
+                    setSourceFilter("all");
+                    setSortBy("newest");
+                  }}
+                >
+                  Clear filters
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredResources.map((resource) => (
+                <Card
+                  key={resource.id}
+                  className={cn("flex h-full flex-col gap-4 rounded-3xl border-slate-200 p-5 shadow-sm")}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="bg-slate-100 text-slate-700">
+                          {resource.category}
+                        </Badge>
+                        <Badge variant="outline" className="border-slate-200 text-slate-600">
+                          {resource.source}
+                        </Badge>
+                      </div>
+
+                      <div className="space-y-1">
+                        <h2 className="text-xl font-semibold text-slate-950 text-balance">{resource.title}</h2>
+                        <p className="truncate text-sm text-slate-500">{getHostname(resource.url)}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        aria-label={`Edit ${resource.title}`}
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenEdit(resource)}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        aria-label={`Delete ${resource.title}`}
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setDeleteError(null);
+                          setResourceToDelete(resource);
+                        }}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <p className="flex-1 text-sm leading-6 text-slate-600 text-pretty">
+                    {resource.notes || "No note yet. Open the link to revisit the original resource."}
+                  </p>
+
+                  <div className="flex items-center justify-between gap-3 pt-2">
+                    <div className="flex items-center gap-2 text-sm text-slate-500 tabular-nums">
+                      <CalendarDays className="size-4" />
+                      <span>Saved {formatSavedAt(resource.savedAt)}</span>
+                    </div>
+
+                    <Button asChild variant="outline" className="gap-2">
+                      <a href={resource.url} target="_blank" rel="noreferrer">
+                        Open
+                        <ArrowUpRight className="size-4" />
+                      </a>
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      </main>
 
-
-      {/* Resources Display */}
-      {resources.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-          <img
-            src="/images/resource-folder-icon.png"
-            alt="No resources"
-            className="w-32 h-32 object-contain mx-auto mb-4 hover:scale-105 transition-transform duration-300"
-          />
-          <h3 className="text-lg font-semibold mb-2">No resources yet</h3>
-        </div>
-      ) : (
-        <>
-          {/* Admin Resources Section */}
-          {filteredAdminResources.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="h-px flex-1 bg-gradient-to-r from-blue-200 to-transparent"></div>
-                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
-                  Resources
-                </h3>
-                <div className="h-px flex-1 bg-gradient-to-l from-blue-200 to-transparent"></div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredAdminResources.map((resource) => (
-                  <ResourceCard key={resource.id} resource={resource} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* User Resources Section */}
-          {filteredUserResources.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="h-px flex-1 bg-gradient-to-r from-gray-200 to-transparent"></div>
-                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                  User Resources
-                </h3>
-                <div className="h-px flex-1 bg-gradient-to-l from-gray-200 to-transparent"></div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredUserResources.map((resource) => (
-                  <ResourceCard key={resource.id} resource={resource} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* No filtered results */}
-          {filteredAdminResources.length === 0 && filteredUserResources.length === 0 && (
-            <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-              <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No resources found</h3>
-              <p className="text-gray-600 mb-4">
-                Try adjusting your filters to see more resources
-              </p>
-            </div>
-          )}
-        </>
+      {dialogOpen && (
+        <AddResourceDialog
+          key={editingResource?.id ?? "create-resource"}
+          open={dialogOpen}
+          onOpenChange={(nextOpen) => {
+            setDialogOpen(nextOpen);
+            if (!nextOpen) {
+              setEditingResource(null);
+              setDialogError(null);
+            }
+          }}
+          onSave={handleSaveResource}
+          saving={dialogSaving}
+          error={dialogError}
+          categoryOptions={categories}
+          editingResource={editingResource}
+        />
       )}
 
-      <AddResourceDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSave={handleSaveResource}
-        editingResource={editingResource}
-      />
-    </div>
+      <AlertDialog
+        open={Boolean(resourceToDelete)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setResourceToDelete(null);
+            setDeleteError(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this resource?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {resourceToDelete
+                ? `This will remove "${resourceToDelete.title}" from the library.`
+                : "This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {deleteError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {deleteError}
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 text-white hover:bg-red-700"
+              disabled={deleting}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteResource();
+              }}
+            >
+              {deleting ? "Deleting..." : "Delete resource"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

@@ -1,80 +1,139 @@
-/**
- * services/clients/resources-client.ts
- * Resources API Client
- * 
- * CORE RESPONSIBILITIES:
- * - Resource library management (CRUD)
- * - URL and metadata handling
- * 
- * USAGE:
- * - Accessed via apiClient.resources.methodName()
- */
+import { Resource } from "@/app/components/types";
+import { getSupabaseConfig, SUPABASE_TABLES } from "../config";
 
-import { BaseClient } from '../base-client';
-import { API_ENDPOINTS } from '../config';
-
-export interface Resource {
-    id: string;
-    title: string;
-    url: string;
-    description: string;
-    category: string;
-    addedBy: string;
-    addedById: string;
-    addedDate: string;
-    isAdminResource: boolean;
+export interface ApiError {
+  message: string;
+  status: number;
+  details?: unknown;
 }
 
-export interface CreateResourceDto {
-    title: string;
-    url: string;
-    description: string;
-    category: string;
-    addedBy: string;
-    addedById: string;
-    addedDate: string;
-    isAdminResource: boolean;
+export interface CreateResourceDto extends Omit<Resource, "id"> {}
+
+export interface UpdateResourceDto extends Partial<CreateResourceDto> {}
+
+interface ResourceRow {
+  id: string;
+  title: string;
+  url: string;
+  category: string | null;
+  source: string | null;
+  notes: string | null;
+  saved_at: string | null;
+  created_at?: string | null;
 }
 
-export interface UpdateResourceDto extends Partial<CreateResourceDto> { }
+function inferSource(url: string) {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "");
+    return hostname.split(".")[0]?.replace(/[-_]/g, " ") || "Web";
+  } catch {
+    return "Web";
+  }
+}
 
-export class ResourcesClient extends BaseClient {
-    /**
-     * Get all resources
-     */
-    async getAll(): Promise<Resource[]> {
-        const data = await this.get<{ resources: Resource[] }>(API_ENDPOINTS.RESOURCES);
-        return data.resources || [];
-    }
+function toResource(row: Partial<ResourceRow> & Record<string, unknown>): Resource {
+  return {
+    id: String(row.id ?? ""),
+    title: String(row.title ?? "Untitled resource"),
+    url: String(row.url ?? ""),
+    category: String(row.category ?? "Other"),
+    source: String(row.source ?? inferSource(String(row.url ?? ""))),
+    notes: String(row.notes ?? ""),
+    savedAt: String(row.saved_at ?? new Date().toISOString()),
+  };
+}
 
-    /**
-     * Create a new resource
-     */
-    async create(resource: CreateResourceDto): Promise<Resource> {
-        const data = await this.post<{ resource: Resource }>(
-            API_ENDPOINTS.RESOURCES,
-            resource
-        );
-        return data.resource;
-    }
+function toRow(resource: CreateResourceDto | UpdateResourceDto) {
+  return {
+    title: resource.title,
+    url: resource.url,
+    category: resource.category,
+    source: resource.source,
+    notes: resource.notes,
+    saved_at: resource.savedAt,
+  };
+}
 
-    /**
-     * Update a resource
-     */
-    async update(id: string, updates: UpdateResourceDto): Promise<Resource> {
-        const data = await this.put<{ resource: Resource }>(
-            `${API_ENDPOINTS.RESOURCES}/${id}`,
-            updates
-        );
-        return data.resource;
-    }
+async function supabaseRequest<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const { url, anonKey } = getSupabaseConfig();
+  const headers = new Headers(init.headers);
+  headers.set("apikey", anonKey);
+  headers.set("Authorization", `Bearer ${anonKey}`);
 
-    /**
-     * Delete a resource
-     */
-    async delete(id: string): Promise<void> {
-        await this.deleteHttp<{ success: boolean }>(
-            `${API_ENDPOINTS.RESOURCES}/${id}`
-        );
-    }
+  if (init.body) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(`${url}/rest/v1${path}`, {
+    ...init,
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw {
+      message:
+        String(errorData.message || errorData.error || "Supabase request failed"),
+      status: response.status,
+      details: errorData,
+    } as ApiError;
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
+}
+
+export class ResourcesClient {
+  async getAll(): Promise<Resource[]> {
+    const rows = await supabaseRequest<ResourceRow[]>(
+      `/${SUPABASE_TABLES.RESOURCES}?select=*&order=saved_at.desc`,
+    );
+    return rows.map(toResource);
+  }
+
+  async create(resource: CreateResourceDto): Promise<Resource> {
+    const rows = await supabaseRequest<ResourceRow[]>(
+      `/${SUPABASE_TABLES.RESOURCES}?select=*`,
+      {
+        method: "POST",
+        headers: {
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify(toRow(resource)),
+      },
+    );
+
+    return toResource(rows[0]);
+  }
+
+  async update(id: string, updates: UpdateResourceDto): Promise<Resource> {
+    const rows = await supabaseRequest<ResourceRow[]>(
+      `/${SUPABASE_TABLES.RESOURCES}?id=eq.${encodeURIComponent(id)}&select=*`,
+      {
+        method: "PATCH",
+        headers: {
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify(toRow(updates)),
+      },
+    );
+
+    return toResource(rows[0]);
+  }
+
+  async delete(id: string): Promise<void> {
+    await supabaseRequest<void>(
+      `/${SUPABASE_TABLES.RESOURCES}?id=eq.${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+      },
+    );
+  }
 }

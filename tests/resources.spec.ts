@@ -1,41 +1,112 @@
-import { test, expect } from '@playwright/test';
+import { expect, test, type Page } from "@playwright/test";
 
-test.describe('Resources Library - Links & Filters', () => {
-    test.beforeEach(async ({ page }) => {
-        // Login as Admin
-        await page.goto('/');
-        await page.getByRole('button', { name: 'Login', exact: true }).click();
-        await page.getByRole('button').filter({ hasText: 'Yamparala Rahul' }).click();
-        await page.locator('input[type="password"]').fill('1234');
-        await page.getByRole('button', { name: 'Log In' }).click();
-        await expect(page.locator('input[type="password"]')).not.toBeVisible();
+type ResourceRecord = {
+  id: string;
+  title: string;
+  url: string;
+  category: string;
+  source: string;
+  notes: string;
+  saved_at: string;
+};
 
-        // Default tab is Resources, no need to click trigger (it's gone anyway)
-        await expect(page.locator('h2', { hasText: 'Resources' })).toBeVisible();
-    });
+async function mockResourceApi(page: Page, initialResources: ResourceRecord[]) {
+  let resources = [...initialResources];
 
-    // test('Add a new resource and verify layout', async ({ page }) => { ... }) removed as Add Resource button is gone from UI
+  await page.route("**/rest/v1/resources**", async (route) => {
+    const method = route.request().method();
+    const url = new URL(route.request().url());
 
-    test('Filter resources by Category', async ({ page }) => {
-        // 1. Select a category from the first dropdown
-        const categoryDropdown = page.locator('button').filter({ hasText: 'Category' }).first();
-        await categoryDropdown.click();
+    if (method === "GET") {
+      await route.fulfill({ json: resources });
+      return;
+    }
 
-        // Assuming there is at least one category like 'Testing Tools' or 'all'
-        await page.getByRole('option').first().click();
+    if (method === "POST") {
+      const payload = route.request().postDataJSON() as Omit<ResourceRecord, "id">;
+      const created = { ...payload, id: String(resources.length + 1) };
+      resources = [created, ...resources];
+      await route.fulfill({ status: 201, json: [created] });
+      return;
+    }
 
-        // Verification would depend on existing data, but we check if filter bar persists
-        await expect(categoryDropdown).toBeVisible();
-    });
+    if (method === "PATCH") {
+      const payload = route.request().postDataJSON() as Omit<ResourceRecord, "id">;
+      const filter = url.searchParams.get("id") ?? "";
+      const id = filter.replace(/^eq\./, "");
+      const updated = { ...payload, id };
+      resources = resources.map((resource) => (resource.id === id ? updated : resource));
+      await route.fulfill({ json: [updated] });
+      return;
+    }
 
-    test('Delete a resource', async ({ page }) => {
-        // 1. Find a resource card and click delete icon (Trash2)
-        const resourceCard = page.locator('.grid > div').first();
-        const resourceTitle = await resourceCard.locator('h3').innerText();
+    if (method === "DELETE") {
+      const filter = url.searchParams.get("id") ?? "";
+      const id = filter.replace(/^eq\./, "");
+      resources = resources.filter((resource) => resource.id !== id);
+      await route.fulfill({ status: 204, body: "" });
+      return;
+    }
 
-        await resourceCard.locator('button:has(svg.lucide-trash-2)').click();
+    await route.fallback();
+  });
+}
 
-        // 2. Verify gone
-        await expect(page.getByText(resourceTitle, { exact: true })).not.toBeVisible();
-    });
+test("creates the first saved resource", async ({ page }) => {
+  await mockResourceApi(page, []);
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: "Save every useful link in one place." })).toBeVisible();
+  await page.getByRole("button", { name: "Save the first resource" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Save resource" });
+  await dialog.getByLabel("Title *").fill("Radix accessibility guide");
+  await dialog.getByLabel("URL *").fill("radix-ui.com/primitives/docs/overview/accessibility");
+  await dialog.getByLabel("Source").fill("Radix");
+  await dialog.getByLabel("Notes").fill("Good reference for accessible interaction patterns.");
+  await dialog.getByRole("button", { name: "Save resource" }).click();
+
+  await expect(page.getByText("Radix accessibility guide")).toBeVisible();
+  await expect(page.getByText("Good reference for accessible interaction patterns.")).toBeVisible();
+});
+
+test("filters, edits, and deletes resources", async ({ page }) => {
+  await mockResourceApi(page, [
+    {
+      id: "1",
+      title: "Aceternity components",
+      url: "https://ui.aceternity.com",
+      category: "Inspiration",
+      source: "Aceternity",
+      notes: "Useful visual reference ideas.",
+      saved_at: "2026-03-20T10:00:00.000Z",
+    },
+    {
+      id: "2",
+      title: "React docs",
+      url: "https://react.dev",
+      category: "Docs",
+      source: "React",
+      notes: "Official docs and API references.",
+      saved_at: "2026-03-19T10:00:00.000Z",
+    },
+  ]);
+
+  await page.goto("/");
+
+  await page.getByLabel("Search resources").fill("Aceternity");
+  await expect(page.getByText("Aceternity components")).toBeVisible();
+  await expect(page.getByText("React docs")).not.toBeVisible();
+
+  await page.getByLabel("Search resources").fill("");
+  await page.getByLabel("Edit Aceternity components").click();
+  const dialog = page.getByRole("dialog", { name: "Edit resource" });
+  await dialog.getByLabel("Title *").fill("Aceternity UI");
+  await dialog.getByRole("button", { name: "Update resource" }).click();
+  await expect(page.getByText("Aceternity UI")).toBeVisible();
+
+  await page.getByLabel("Delete Aceternity UI").click();
+  await page.getByRole("button", { name: "Delete resource" }).click();
+  await expect(page.getByText("Aceternity UI")).not.toBeVisible();
+  await expect(page.getByText("React docs")).toBeVisible();
 });
