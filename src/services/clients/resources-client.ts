@@ -78,12 +78,11 @@ async function supabaseRequest<T>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw {
-      message:
-        String(errorData.message || errorData.error || "Supabase request failed"),
-      status: response.status,
-      details: errorData,
-    } as ApiError;
+    const message = String(errorData.message || errorData.error || `Supabase request failed (${response.status})`);
+    const err = new Error(message) as Error & ApiError;
+    err.status = response.status;
+    err.details = errorData;
+    throw err;
   }
 
   if (response.status === 204) {
