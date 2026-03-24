@@ -6,6 +6,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
+    "tunnel": "npx wormkey http 5173",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
