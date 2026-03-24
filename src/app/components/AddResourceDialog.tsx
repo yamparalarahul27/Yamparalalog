@@ -42,7 +42,7 @@ export function AddResourceDialog({
   editingResource,
 }: AddResourceDialogProps) {
   const categoryChoices = Array.from(
-    new Set(["Articles", "Tools", "Docs", "Inspiration", "Assets", "Courses", "Other", ...categoryOptions]),
+    new Set(["Articles", "Tools", "Docs", "Inspiration", "Assets", "Courses", "Skill", "Other", ...categoryOptions]),
   );
   const [title, setTitle] = useState(editingResource?.title ?? "");
   const [url, setUrl] = useState(editingResource?.url ?? "");
