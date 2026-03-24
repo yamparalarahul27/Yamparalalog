@@ -6,5 +6,6 @@ export interface Resource {
   toolSubcategory: "Dev tool" | "UX tool" | null;
   source: string;
   notes: string;
+  tags: string[];
   savedAt: string;
 }

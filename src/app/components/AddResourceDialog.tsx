@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Resource } from "@/app/components/types";
+import { TagInput } from "@/app/components/TagInput";
 import { Button } from "@/app/components/ui/button";
 import {
   Dialog,
@@ -52,6 +53,7 @@ export function AddResourceDialog({
   );
   const [source, setSource] = useState(editingResource?.source ?? "");
   const [notes, setNotes] = useState(editingResource?.notes ?? "");
+  const [tags, setTags] = useState<string[]>(editingResource?.tags ?? []);
   const [fieldError, setFieldError] = useState<string | null>(null);
 
   const normalizeUrl = (value: string) => {
@@ -98,6 +100,7 @@ export function AddResourceDialog({
       toolSubcategory: category === "Tools" ? toolSubcategory ?? "Dev tool" : null,
       source: source.trim() || guessSource(normalizedUrl),
       notes: notes.trim(),
+      tags,
       savedAt: editingResource?.savedAt ?? new Date().toISOString(),
     });
 
@@ -210,6 +213,11 @@ export function AddResourceDialog({
               placeholder="Why it matters, what to revisit, or what stood out."
               rows={5}
             />
+          </div>
+
+          <div>
+            <Label>Tags</Label>
+            <TagInput tags={tags} onChange={setTags} />
           </div>
 
           {(fieldError || error) && (
