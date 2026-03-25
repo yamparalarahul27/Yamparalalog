@@ -6,9 +6,10 @@ import { Input } from "@/app/components/ui/input";
 interface TagInputProps {
   tags: string[];
   onChange: (tags: string[]) => void;
+  loading?: boolean;
 }
 
-export function TagInput({ tags, onChange }: TagInputProps) {
+export function TagInput({ tags, onChange, loading = false }: TagInputProps) {
   const [inputValue, setInputValue] = useState("");
 
   const addTag = (raw: string) => {
@@ -42,15 +43,25 @@ export function TagInput({ tags, onChange }: TagInputProps) {
         onBlur={() => {
           if (inputValue.trim()) addTag(inputValue);
         }}
+        disabled={loading}
       />
-      {tags.length > 0 && (
+
+      {loading && (
+        <div className="flex flex-wrap gap-1.5">
+          {[1, 2, 3].map((i) => (
+            <span
+              key={i}
+              className="inline-flex h-6 w-20 animate-pulse rounded-full bg-blue-100"
+              style={{ animationDelay: `${i * 100}ms` }}
+            />
+          ))}
+        </div>
+      )}
+
+      {!loading && tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {tags.map((tag) => (
-            <Badge
-              key={tag}
-              variant="secondary"
-              className="gap-1 bg-blue-50 text-blue-700 pr-1"
-            >
+            <Badge key={tag} variant="secondary" className="gap-1 bg-blue-50 text-blue-700 pr-1">
               {tag}
               <button
                 type="button"

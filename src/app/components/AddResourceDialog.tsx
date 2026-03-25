@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Resource } from "@/app/components/types";
+import { suggestTagsForUrl } from "@/services/gemini-service";
 import { TagInput } from "@/app/components/TagInput";
 import { Button } from "@/app/components/ui/button";
 import {
@@ -54,11 +55,27 @@ export function AddResourceDialog({
   const [source, setSource] = useState(editingResource?.source ?? "");
   const [notes, setNotes] = useState(editingResource?.notes ?? "");
   const [tags, setTags] = useState<string[]>(editingResource?.tags ?? []);
+  const [tagsLoading, setTagsLoading] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
 
   const normalizeUrl = (value: string) => {
     const trimmed = value.trim();
     return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  };
+
+  const handleUrlBlur = async () => {
+    if (!url.trim() || tags.length > 0) return;
+    try {
+      const normalized = normalizeUrl(url.trim());
+      new URL(normalized);
+      setTagsLoading(true);
+      const suggested = await suggestTagsForUrl(normalized);
+      setTags(suggested);
+    } catch {
+      // silently ignore — user can add tags manually
+    } finally {
+      setTagsLoading(false);
+    }
   };
 
   const guessSource = (value: string) => {
@@ -144,6 +161,7 @@ export function AddResourceDialog({
                 setUrl(event.target.value);
                 setFieldError(null);
               }}
+              onBlur={() => void handleUrlBlur()}
               placeholder="https://example.com"
               required
             />
@@ -217,7 +235,7 @@ export function AddResourceDialog({
 
           <div>
             <Label>Tags</Label>
-            <TagInput tags={tags} onChange={setTags} />
+            <TagInput tags={tags} onChange={setTags} loading={tagsLoading} />
           </div>
 
           {(fieldError || error) && (
